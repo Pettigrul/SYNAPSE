@@ -1,0 +1,97 @@
+# Flows — Scope & Session
+
+Flow 8 (scope load, progressive resume, config resolution, file integrity).
+
+---
+
+## Config Resolution
+
+`Engagement .config → Global .config → Hardcoded defaults`. Read at flow start, merge top-down (engagement wins), cache for the session.
+
+| Key | Default | Notes |
+|-----|---------|-------|
+| `RUNNING_ON` | (unset) | Free-text: OS, network position, **which Tier-1 runtimes are present**. Doubly important here — see `native-tooling-doctrine.md`. |
+| `ENGAGEMENT_ROOTS` | (required) | Where engagement folders live. New engagements go in the first listed path. |
+| `PROXY` | (unset) | HTTP proxy for web work (native probes route through it). |
+| `MAX_AGENTS` | 3 | Parallel agent cap. |
+| `FREE_ROAM` | ask | After structured agents, optionally add one free-roaming creative agent. |
+| `AUTO_REPORT` | true | Auto-write reports on confirmed findings (gated by impact-first bar). |
+| `AUTO_TRIAGE` | true | Run QA on gadgets and reports. |
+| `DELAY` | 0 | ms between agent requests (`Start-Sleep -Milliseconds`). |
+| `VERBOSITY` | normal | quiet / normal / verbose. |
+| `ALLOW_TIER1` | python,go,node | Which Tier-1 runtimes are policy-allowed for this engagement (the *availability* check is separate — this is the *policy* gate). E.g. `ALLOW_TIER1=python` forbids Node/Go even if installed. |
+| `LANGUAGE` / `TONE` | (unset) | Output language / style. |
+
+---
+
+## Flow 8 — Load Scope / Resume
+
+**Trigger:** "I'm hacking on [X]" / "start engagement [X]" / "load scope" / "I'm back" / "resume" / "switch to [X]".
+
+### Step 1 — Resolve engagement directory
+- Search `ENGAGEMENT_ROOTS` for a folder matching the name. Found → resume path. Not found → new-engagement path.
+- New engagement: create `[first ENGAGEMENT_ROOT]/[sanitized-name]/`.
+
+### Step 1.5 — Resolve runtime + filename
+- Detect which runtime is hosting (system-prompt signature). Resolve the project-instructions filename: `CLAUDE.md` (Claude Code / SDK) or `AGENTS.md` (Antigravity). Cross-runtime → create both.
+
+### Step 1.8 — Runtime availability check (SYNAPSE-specific, MANDATORY on first load)
+Run the availability check from `native-tooling-doctrine.md ## Runtime availability` against the host(s) in scope (or the local host if that's the target):
+```powershell
+$PSVersionTable.PSVersion
+Get-Command python, python3, py, go, node, npm -ErrorAction SilentlyContinue | Select Name, Version
+# RSAT / AD module presence:
+Get-Module -ListAvailable ActiveDirectory -ErrorAction SilentlyContinue
+Get-Command dsquery, nltest -ErrorAction SilentlyContinue
+```
+Write the result to `ccNotes.md ## What Works Here` and to `scope.md ## Runtime Availability`. This determines every Tier-1 escalation path. If the local runtime can't reach the target host yet, write a `@user` task to confirm access and proceed with what you can.
+
+### Step 2 — Create missing engagement files (only if new / missing)
+Create from `template-files.md`: `scope.md`, `session.md`, `toDoList.md`, the six `cc*.md`, `.config` (derived from global), the nine numbered directories. **Never overwrite existing files.**
+
+**Deterministic bootstrap (S1 — preferred, self-healing):** run `node tools/workspace/cli.mjs bootstrap`
+(resolves the active engagement, or `--name <n>`). It creates exactly the missing dirs/documents from this
+contract, idempotently, **never overwriting** existing content, **without** inventing tasks/findings or touching
+the manifest / Caido association / `evidence/`. An existing-but-invalid `scope.md` is a controlled failure
+(fix, then re-run). `/iniciar-pentest` runs this **before any recon**. Starter `## Tasks` seeding (target-specific
+first moves) is still the dispatcher's job — the tool leaves `## Tasks` as a skeleton.
+
+### Step 2.5 — Project-instructions file self-heal (MANDATORY, every load AND resume)
+- Resolve filename (Step 1.5). Missing → write the full template from `template-files.md ## Runtime project-instructions file` (substitute name + date).
+- Present → read it; check for the `🔧 NATIVE-TOOLING CONSTRAINT` block. Missing → prepend it (don't overwrite user content below).
+- This is the load-bearing fix for the native-tooling rules surviving context compression.
+
+### Step 3 — Load state (depth by recency)
+- **Quick resume** (last touched ≤7 days): `session.md` + `toDoList.md` + `ccGadgets.md` + `ccLeads.md` + `checkpoint.md` (if present).
+- **Full resume** (>7 days OR user says "full resume"): all engagement files + a scope diff (re-fetch scope if a URL is on file; diff tech stack) + a regression note (re-test confirmed findings — Flow 15).
+- Read `checkpoint.md` if present and replay its "next steps".
+
+### Step 4 — Orient + report
+Output a tight orientation: open runtime tasks (top of `toDoList.md`), open `@user` tasks (surface oldest-first), active gadgets, queued leads, runtime availability summary, and the single recommended next action. Then work through the open runtime tasks and report back, unless the user is mid-conversation.
+
+**Fluidity (`references/operational-fluidity.md`):** resolve the engagement/scope/mode from context — don't re-ask for what the engagement already answers. Then **execute** the first pending permitted (Class R) activity and persist it, rather than ending on "pentest iniciado" / "recomendo os seguintes testes" when no real blocker exists. Class A still goes through the Approval Gate; a DEGRADED-by-optionals Preflight does not block an activity whose required deps are present.
+
+### Step 5 — File integrity
+If a CC file is malformed (bad table, broken markers), note it and repair non-destructively (move the broken copy to `8-Archive/` with a date prefix, regenerate the header from template, re-import salvageable rows). Never silently drop data.
+
+---
+
+## Engagement manifest & modality (optional, additive — H2c-F1)
+
+Backward-compatible layer over Step 2. Does **not** replace scope.md or the directory convention.
+
+- A new engagement MAY carry a manifest (`.engagement.json`) via `tools/workspace/engagement.mjs`
+  (`initEngagement`): records **modality** (`blackbox` default / `graybox` / `whitebox`), a reserved
+  **Caido** association (`caido.projectId`, null until H2b-F1+), and the **Whitebox** contract.
+- **Modality** gates source availability (`sourcesForModality`): Black/Gray Box stay **code-agnostic**;
+  Whitebox source access needs modality `whitebox` AND an explicit `authorizeWhitebox({operator})`.
+- **Whitebox segregation is enforced by code**, not by this prompt: `resolveWorkspacePath` /
+  `decideWhiteboxAccess` deny `Whitebox/` by default + audit elevations. Legacy engagements are **adopted
+  without migration** (`detectWorkspace` → `managed|legacy|empty`). Normal context composition excludes
+  `Whitebox/`. **Limitation:** raw `read`/`bash` bypass the module; effective tool-layer denial needs a
+  per-runtime wrapper (Claude Code reference hook `whitebox-guard-hook.mjs`, not auto-installed). See
+  handbook ch. 8.
+
+## New-engagement quickstart
+
+When the engagement is brand new and scope is thin, don't block — seed `scope.md ## Host Inventory` / `## In Scope` with whatever the user gave, run Step 1.8, create a starter `toDoList.md ## Tasks` with the obvious first moves (host enum or web recon depending on target type), and start. Add a `@user` task for anything you need (creds, host access, a Tier-1 runtime) and keep moving.

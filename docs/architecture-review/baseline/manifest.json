@@ -1,0 +1,3883 @@
+{
+  "tool": "validate_v1.py",
+  "phase": "Fase 0.1 — baseline (read-only)",
+  "generated_utc": "2026-11-04T17:40:57.343934+00:00",
+  "root": "/home/pettigrul/projetos/SYNAPSE",
+  "overall_status": "OK",
+  "checks": {
+    "C1_inventory": {
+      "status": "OK",
+      "detail": "45 arquivos .md inventariados em ['agents', 'references', 'reports', 'intake', 'SKILL.md', 'README.md']"
+    },
+    "C2_techniques": {
+      "status": "OK",
+      "detail": "127 técnicas reais (T=112, B=15) em 17 arquivos de agents/"
+    },
+    "C3_fields": {
+      "status": "OK",
+      "detail": "127 entradas verificadas (técnica + blueprint); 0 avisos, 28 observações de formato"
+    },
+    "C4_index": {
+      "status": "OK",
+      "detail": "Consistência Index<->Techniques verificada em 17 catálogos; 0 divergências"
+    },
+    "C5_routing": {
+      "status": "OK",
+      "detail": "18 alvos roteados; 0 quebrados; 0 catálogos não alcançados"
+    },
+    "C6_links": {
+      "status": "OK",
+      "detail": "links internos quebrados: 0; cross-refs quebrados: 0"
+    },
+    "C7_policies": {
+      "status": "OK",
+      "detail": "3 policies verificadas; 0 problemas (marcadores/Rule 0/presença)"
+    },
+    "C8_brief": {
+      "status": "OK",
+      "detail": "8/8 seções de brief presentes; ordem_ok=True"
+    },
+    "C9_behavior": {
+      "status": "OK",
+      "detail": "Tiers inválidos: 0; vocabulário de banned-tools catalogado (17 tokens) para lint H0",
+      "banned_tokens": [
+        "comsvcs.dll",
+        "directorysearcher",
+        "invoke-cimmethod",
+        "invoke-command",
+        "invoke-restmethod",
+        "invoke-webrequest",
+        "klist",
+        "payload",
+        "proxy",
+        "resolve-dnsname",
+        "socket",
+        "steps",
+        "system.directoryservices",
+        "system.identitymodel.tokens.kerberosrequestorsecuritytoken",
+        "tcpclient",
+        "tcplistener",
+        "test-netconnection"
+      ],
+      "bad_tier": []
+    }
+  },
+  "file_inventory": {
+    "agents/chaos/chaos.md": {
+      "sha256": "c9a29c8cc9bd899529bc1c266a008c72e42bbdf676062363c060392f624f6f04",
+      "bytes": 12226,
+      "lines": 249
+    },
+    "agents/code-review/code-review.md": {
+      "sha256": "9ae27ae60888b3822b5340b87d726096d65d253c05342e3ca37cf2c9fbc731e1",
+      "bytes": 15818,
+      "lines": 285
+    },
+    "agents/code-review/sink-patterns.md": {
+      "sha256": "2c3ba753e05cde666943c6c914ea004a30e3f5b64a824f825b582400aa09f225",
+      "bytes": 4127,
+      "lines": 76
+    },
+    "agents/credential-review/credential-review.md": {
+      "sha256": "d57eb34f53f56d9da75647b228135187e92373c0246688d4a8a8de6f58ab1d4b",
+      "bytes": 8932,
+      "lines": 125
+    },
+    "agents/data-egress-check/data-egress-check.md": {
+      "sha256": "e7f6bc501701e9bd19cd4929f005506780bc37541223dc2bc8e829d6b7c5455c",
+      "bytes": 5808,
+      "lines": 108
+    },
+    "agents/directory-review/directory-review.md": {
+      "sha256": "bf190e9ca335cc55cf101ec38ae452a8fbcf99e458ae97c8d461fc3fdcb262c6",
+      "bytes": 12631,
+      "lines": 162
+    },
+    "agents/evidence-hygiene/evidence-hygiene.md": {
+      "sha256": "f05d2122790b2f734b41201b6aee5703c63b9bb263c04b547e902f9fa6675c88",
+      "bytes": 6526,
+      "lines": 129
+    },
+    "agents/foothold-durability/foothold-durability.md": {
+      "sha256": "50dbc87343238f9bee938972ecce559e40b1453640b66753f195286a0d95dc1f",
+      "bytes": 6074,
+      "lines": 100
+    },
+    "agents/forge/forge.md": {
+      "sha256": "0eb4e4b69a118fdcdcd30c91850ba27e58f0d89b9db5c2fb50d42d9b417b9e2a",
+      "bytes": 14559,
+      "lines": 436
+    },
+    "agents/host-inventory/host-inventory.md": {
+      "sha256": "9009cd55376d4175310465b2a370640827107b904f57769d69623b0f1260edd8",
+      "bytes": 12408,
+      "lines": 194
+    },
+    "agents/host-to-host-access/host-to-host-access.md": {
+      "sha256": "7555152015d7a860856d775115074392e5d47dec364347af9ada3ee78582c4ec",
+      "bytes": 8754,
+      "lines": 122
+    },
+    "agents/methodology/methodology.md": {
+      "sha256": "b20e8be9af073c920ae6cae8630753098e1f70cecf399e7a69cb0edd3aa5e587",
+      "bytes": 4087,
+      "lines": 94
+    },
+    "agents/privilege-review/windows.md": {
+      "sha256": "ed4bc71351528a814f2aaaaf978711f0ff3c83c572a80689fc263c0275279c37",
+      "bytes": 11857,
+      "lines": 161
+    },
+    "agents/telemetry-awareness/lolbins.md": {
+      "sha256": "d2c32281c95b06882616bc5831d51a0c83d9887682c5c913672be2a546b19270",
+      "bytes": 7363,
+      "lines": 137
+    },
+    "agents/telemetry-awareness/telemetry-awareness.md": {
+      "sha256": "087ce168212258a2276d1aac2985ec389ba89c099ed6dfcbf9a4920fd897aad8",
+      "bytes": 5491,
+      "lines": 70
+    },
+    "agents/web-inventory/web-inventory.md": {
+      "sha256": "5f94ee533588244dc70ed4aaf4a75b3c6660c98043838b02bfdfff0813ea00f9",
+      "bytes": 11947,
+      "lines": 232
+    },
+    "agents/web-testing/web-testing.md": {
+      "sha256": "4de13c0c2eb8007d44feda7977289025655b3c33d219ae56f825e960a7a5d4c5",
+      "bytes": 22829,
+      "lines": 421
+    },
+    "references/authorization-gate.md": {
+      "sha256": "042e73fa20195753eeb745a945d72992471916bcdd177eba8e1c10f6d1fb316d",
+      "bytes": 11337,
+      "lines": 129
+    },
+    "references/flows-agents.md": {
+      "sha256": "948423c5c52d9face98c2f9b54400f308e622292bb7451ece4715e2605250db3",
+      "bytes": 6546,
+      "lines": 104
+    },
+    "references/flows-forge.md": {
+      "sha256": "7570b3081c4788bcce8d81e32c8e626d0cb6101e11e8eed95b2e9162b0ec367e",
+      "bytes": 3972,
+      "lines": 45
+    },
+    "references/flows-intake.md": {
+      "sha256": "ea2fada42be5248a276a1092d13aa535d6bbee99b471dfc3af299d81d6643c56",
+      "bytes": 3609,
+      "lines": 52
+    },
+    "references/flows-misc.md": {
+      "sha256": "72f7a9adec30fd098ca3c129c7c36380fb2fcfe64c8277b6f6dc8623e78a7b77",
+      "bytes": 1918,
+      "lines": 21
+    },
+    "references/flows-proxy.md": {
+      "sha256": "b0a5a8e6349f3a472210e2b38e14a19a2e441f503ca8e5f0562cce152489164a",
+      "bytes": 1707,
+      "lines": 33
+    },
+    "references/flows-recon.md": {
+      "sha256": "a621da1f484717417062c1634dabc9fa8805a72efb74a7df54e674ddc224808f",
+      "bytes": 4713,
+      "lines": 84
+    },
+    "references/flows-report.md": {
+      "sha256": "374c3b7d2df4672c85f33d07d69477a4c53dcdf251d697c98d6eb19ba6d05f21",
+      "bytes": 3326,
+      "lines": 39
+    },
+    "references/flows-scope.md": {
+      "sha256": "bc8ac5ab93520dc012423d4076fb65a8f1448577daf5eecb3540ea7bbe1c66c2",
+      "bytes": 5090,
+      "lines": 72
+    },
+    "references/flows-status.md": {
+      "sha256": "e759c9883a5d439a7dd63c6a677543aae94a30917a8d7c9a6a40ae51844a951e",
+      "bytes": 5258,
+      "lines": 70
+    },
+    "references/help.md": {
+      "sha256": "575a7db2e86c0bec97d2e2a6f928ecb53a610a168cf5d1aaa83f17c48bdccc64",
+      "bytes": 4482,
+      "lines": 90
+    },
+    "references/ideas-when-stuck.md": {
+      "sha256": "201a77565ef01004e3cf1c9c7afbdbcc7e6fbd35f640c4b13e076c9df77c815d",
+      "bytes": 3767,
+      "lines": 39
+    },
+    "references/native-tooling-doctrine.md": {
+      "sha256": "069522e00def2484a333d62c1d17a21ecf5156b5452ec302f3766ebee17cbebe",
+      "bytes": 10496,
+      "lines": 124
+    },
+    "references/pattern-index.md": {
+      "sha256": "5f05279537e455ccc6802f91f01bc5ece2ce78bc23a0fdd5c54ac9b7586a354c",
+      "bytes": 6790,
+      "lines": 51
+    },
+    "references/template-files.md": {
+      "sha256": "f88d90d67170557aa1b17019c523b7fb8726a066d5c61314c0126041352122ac",
+      "bytes": 24628,
+      "lines": 502
+    },
+    "references/template-technique.md": {
+      "sha256": "89426667270b735632d6104931518c24d906dec7386d1d5435dd53ae72aa1793",
+      "bytes": 4932,
+      "lines": 84
+    },
+    "references/verification-contract.md": {
+      "sha256": "3c6ec9dd3a51f1336aefc455fbf2808647d34ef835720faaecd2f1a3feee2efa",
+      "bytes": 7427,
+      "lines": 102
+    },
+    "reports/agent-triager.md": {
+      "sha256": "a1e0b0cbf0a9903323e2079c6806f784017704b6bcd4186e142575f828ba600d",
+      "bytes": 2893,
+      "lines": 66
+    },
+    "reports/agent-writer.md": {
+      "sha256": "e121bba5d1532e06176af9a8bf13815c5b473cfd1b193154c7b69d17a20366be",
+      "bytes": 3078,
+      "lines": 50
+    },
+    "reports/impact-library.md": {
+      "sha256": "7ed2d73d24aca0f75bfdb2c4a1a75009764026aa26a7c4fd8b24cd48c6887ac3",
+      "bytes": 6132,
+      "lines": 55
+    },
+    "reports/precedent-library/README.md": {
+      "sha256": "b10e8bf722d47d40fbc11b47673ba04b1db9c2f6dedbcc4503ab9c87e11346c4",
+      "bytes": 770,
+      "lines": 17
+    },
+    "reports/template.md": {
+      "sha256": "f276f8d7c81d63c609fea5be3c4c6b7d062cdac7bdc5d22ac84d95bfe8dadd47",
+      "bytes": 2265,
+      "lines": 77
+    },
+    "intake/links.md": {
+      "sha256": "0926f0bce86f89d31775ae552b6ced70baca05030221ac7f3627f59a3075efbd",
+      "bytes": 190,
+      "lines": 6
+    },
+    "intake/processed.md": {
+      "sha256": "fc854e4a4a8ae0802f6edffad2679273e2f8b05c5a33d48743aefa0654605024",
+      "bytes": 191,
+      "lines": 6
+    },
+    "intake/scratch.md": {
+      "sha256": "8bdfb10ac99bf9c6d37b68bd16cd2afb726b04fb7c21562f45eba6d80076725d",
+      "bytes": 148,
+      "lines": 4
+    },
+    "intake/tags.md": {
+      "sha256": "ed4ba6ba36f36ca563b37df7e4c3823f07094aeed9406c55e4b12193810582f0",
+      "bytes": 1088,
+      "lines": 24
+    },
+    "SKILL.md": {
+      "sha256": "ff1c9987d310b8804b4a4fea11814e9cb2fad9db4c7baa404840bcf21fef13b4",
+      "bytes": 45085,
+      "lines": 440
+    },
+    "README.md": {
+      "sha256": "45a1b39d0e08d65003f10e6bcce16560759c0be357a7d4459ddf9a827285e9ea",
+      "bytes": 5381,
+      "lines": 106
+    }
+  },
+  "catalogs": {
+    "agents/chaos/chaos.md": {
+      "has_index": true,
+      "tech_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8"
+      ],
+      "tech_count": 8,
+      "index_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8"
+      ],
+      "crossref_ids": []
+    },
+    "agents/code-review/code-review.md": {
+      "has_index": true,
+      "tech_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "T9",
+        "T10",
+        "T11"
+      ],
+      "tech_count": 11,
+      "index_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "T9",
+        "T10",
+        "T11"
+      ],
+      "crossref_ids": [
+        "T2"
+      ]
+    },
+    "agents/code-review/sink-patterns.md": {
+      "has_index": false,
+      "tech_ids": [],
+      "tech_count": 0,
+      "index_ids": [],
+      "crossref_ids": []
+    },
+    "agents/credential-review/credential-review.md": {
+      "has_index": true,
+      "tech_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7"
+      ],
+      "tech_count": 7,
+      "index_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7"
+      ],
+      "crossref_ids": []
+    },
+    "agents/data-egress-check/data-egress-check.md": {
+      "has_index": true,
+      "tech_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4"
+      ],
+      "tech_count": 4,
+      "index_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4"
+      ],
+      "crossref_ids": []
+    },
+    "agents/directory-review/directory-review.md": {
+      "has_index": true,
+      "tech_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "T9"
+      ],
+      "tech_count": 9,
+      "index_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "T9"
+      ],
+      "crossref_ids": []
+    },
+    "agents/evidence-hygiene/evidence-hygiene.md": {
+      "has_index": true,
+      "tech_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5"
+      ],
+      "tech_count": 5,
+      "index_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5"
+      ],
+      "crossref_ids": []
+    },
+    "agents/foothold-durability/foothold-durability.md": {
+      "has_index": true,
+      "tech_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6"
+      ],
+      "tech_count": 6,
+      "index_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6"
+      ],
+      "crossref_ids": []
+    },
+    "agents/forge/forge.md": {
+      "has_index": true,
+      "tech_ids": [
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "B5",
+        "B6",
+        "B7",
+        "B8",
+        "B9",
+        "B10",
+        "B11",
+        "B12",
+        "B13",
+        "B14",
+        "B15"
+      ],
+      "tech_count": 15,
+      "index_ids": [
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "B5",
+        "B6",
+        "B7",
+        "B8",
+        "B9",
+        "B10",
+        "B11",
+        "B12",
+        "B13",
+        "B14",
+        "B15"
+      ],
+      "crossref_ids": []
+    },
+    "agents/host-inventory/host-inventory.md": {
+      "has_index": true,
+      "tech_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "T9",
+        "T10"
+      ],
+      "tech_count": 10,
+      "index_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "T9",
+        "T10"
+      ],
+      "crossref_ids": []
+    },
+    "agents/host-to-host-access/host-to-host-access.md": {
+      "has_index": true,
+      "tech_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7"
+      ],
+      "tech_count": 7,
+      "index_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7"
+      ],
+      "crossref_ids": []
+    },
+    "agents/methodology/methodology.md": {
+      "has_index": false,
+      "tech_ids": [],
+      "tech_count": 0,
+      "index_ids": [],
+      "crossref_ids": []
+    },
+    "agents/privilege-review/windows.md": {
+      "has_index": true,
+      "tech_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "T9"
+      ],
+      "tech_count": 9,
+      "index_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "T9"
+      ],
+      "crossref_ids": [
+        "T2",
+        "T6",
+        "T9"
+      ]
+    },
+    "agents/telemetry-awareness/lolbins.md": {
+      "has_index": true,
+      "tech_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "T9"
+      ],
+      "tech_count": 9,
+      "index_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "T9"
+      ],
+      "crossref_ids": []
+    },
+    "agents/telemetry-awareness/telemetry-awareness.md": {
+      "has_index": true,
+      "tech_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4"
+      ],
+      "tech_count": 4,
+      "index_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4"
+      ],
+      "crossref_ids": []
+    },
+    "agents/web-inventory/web-inventory.md": {
+      "has_index": true,
+      "tech_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8"
+      ],
+      "tech_count": 8,
+      "index_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8"
+      ],
+      "crossref_ids": []
+    },
+    "agents/web-testing/web-testing.md": {
+      "has_index": true,
+      "tech_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "T9",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15"
+      ],
+      "tech_count": 15,
+      "index_ids": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "T9",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15"
+      ],
+      "crossref_ids": []
+    }
+  },
+  "policies": {
+    "authorization-gate": {
+      "file": "references/authorization-gate.md",
+      "sha256": "042e73fa20195753eeb745a945d72992471916bcdd177eba8e1c10f6d1fb316d",
+      "marker_present": true,
+      "rule0_present": true
+    },
+    "verification-contract": {
+      "file": "references/verification-contract.md",
+      "sha256": "3c6ec9dd3a51f1336aefc455fbf2808647d34ef835720faaecd2f1a3feee2efa",
+      "marker_present": true
+    },
+    "native-tooling-doctrine": {
+      "file": "references/native-tooling-doctrine.md",
+      "sha256": "069522e00def2484a333d62c1d17a21ecf5156b5452ec302f3766ebee17cbebe"
+    }
+  },
+  "brief_contract": {
+    "sections_present": [
+      "Objective",
+      "Active engagement task",
+      "Target",
+      "Run mode",
+      "Native-tooling constraint",
+      "Techniques to apply",
+      "Verification contract",
+      "Return contract"
+    ],
+    "order_ok": true,
+    "expected": [
+      "Objective",
+      "Active engagement task",
+      "Target",
+      "Run mode",
+      "Native-tooling constraint",
+      "Techniques to apply",
+      "Verification contract",
+      "Return contract"
+    ]
+  },
+  "routing": {
+    "reachable": [
+      "agents/chaos/chaos.md",
+      "agents/code-review/code-review.md",
+      "agents/code-review/sink-patterns.md",
+      "agents/credential-review/credential-review.md",
+      "agents/data-egress-check/data-egress-check.md",
+      "agents/directory-review/directory-review.md",
+      "agents/evidence-hygiene/evidence-hygiene.md",
+      "agents/foothold-durability/foothold-durability.md",
+      "agents/forge/forge.md",
+      "agents/host-inventory/host-inventory.md",
+      "agents/host-to-host-access/host-to-host-access.md",
+      "agents/methodology/methodology.md",
+      "agents/privilege-review/windows.md",
+      "agents/telemetry-awareness/lolbins.md",
+      "agents/telemetry-awareness/telemetry-awareness.md",
+      "agents/web-inventory/web-inventory.md",
+      "agents/web-testing/web-testing.md",
+      "references/native-tooling-doctrine.md"
+    ],
+    "unreached": [],
+    "broken_targets": 0
+  },
+  "techniques": [
+    {
+      "uid": "agents/chaos/chaos.md#T1",
+      "file": "agents/chaos/chaos.md",
+      "id": "T1",
+      "kind": "technique",
+      "title": "Parameter fuzz (web)",
+      "line": 20,
+      "body_lines": 30,
+      "body_sha256": "bf8eb46bf6949c7910bdf7240212b52bb09ce7e436405b1e61519f4a641d97f9",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/chaos/chaos.md#T2",
+      "file": "agents/chaos/chaos.md",
+      "id": "T2",
+      "kind": "technique",
+      "title": "Header injection fuzz",
+      "line": 50,
+      "body_lines": 31,
+      "body_sha256": "c15ebfd55ff9b00ee2413e94aa34731188a8079dd5a2aa1e271f49f08fa917dd",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/chaos/chaos.md#T3",
+      "file": "agents/chaos/chaos.md",
+      "id": "T3",
+      "kind": "technique",
+      "title": "Method tampering",
+      "line": 81,
+      "body_lines": 20,
+      "body_sha256": "7a6b84f6b90530fa4262d11608487dace454a80691c2eef29df6b4850a6f7e2e",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/chaos/chaos.md#T4",
+      "file": "agents/chaos/chaos.md",
+      "id": "T4",
+      "kind": "technique",
+      "title": "Content-type juggling",
+      "line": 101,
+      "body_lines": 27,
+      "body_sha256": "3d927f0922ab7c94a6ed1cb7ccf696d0edea61712479713b9594c0f091e4d2fd",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/chaos/chaos.md#T5",
+      "file": "agents/chaos/chaos.md",
+      "id": "T5",
+      "kind": "technique",
+      "title": "Rate limit / brute force",
+      "line": 128,
+      "body_lines": 24,
+      "body_sha256": "90aa52c6752759b6b9a2ce858ac083f34df104ea89a230da935f14f92b96b4e6",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/chaos/chaos.md#T6",
+      "file": "agents/chaos/chaos.md",
+      "id": "T6",
+      "kind": "technique",
+      "title": "Unicode / encoding fuzz",
+      "line": 152,
+      "body_lines": 26,
+      "body_sha256": "5c37959a32de99e838e4aaaa6d2ec8d8b03f92b7c7837ba7ff7236d1c1848aa0",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/chaos/chaos.md#T7",
+      "file": "agents/chaos/chaos.md",
+      "id": "T7",
+      "kind": "technique",
+      "title": "File format fuzz",
+      "line": 178,
+      "body_lines": 41,
+      "body_sha256": "c5d98934573266330ba764213d6dbcd40ba7c7c5dd52d498934264dbe55db02f",
+      "fields": [
+        "Escalation",
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "1-python",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/chaos/chaos.md#T8",
+      "file": "agents/chaos/chaos.md",
+      "id": "T8",
+      "kind": "technique",
+      "title": "Windows service fuzz",
+      "line": 219,
+      "body_lines": 31,
+      "body_sha256": "d3d3e5ce5083667a3eef4bc17f9b9dc04061f45fa52c71cb6c75d9be7808f031",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/code-review/code-review.md#T1",
+      "file": "agents/code-review/code-review.md",
+      "id": "T1",
+      "kind": "technique",
+      "title": "Sink-driven review",
+      "line": 23,
+      "body_lines": 22,
+      "body_sha256": "617ee72133225668e87d3125f69e14d75a7db6ad0945c14e9bbc14ed0fe63b3b",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/code-review/code-review.md#T10",
+      "file": "agents/code-review/code-review.md",
+      "id": "T10",
+      "kind": "technique",
+      "title": "Race condition / TOCTOU review",
+      "line": 207,
+      "body_lines": 21,
+      "body_sha256": "8e4402af69d0adaa813fbfd618d088943abed629411760252ad94d0148b9f6ca",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/code-review/code-review.md#T11",
+      "file": "agents/code-review/code-review.md",
+      "id": "T11",
+      "kind": "technique",
+      "title": "Automated sink scanner",
+      "line": 228,
+      "body_lines": 58,
+      "body_sha256": "e543f550af9a1cc96c7b98912d52dec5a2bc659eac88fd26540499581a002f69",
+      "fields": [
+        "Escalation",
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "1-python",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/code-review/code-review.md#T2",
+      "file": "agents/code-review/code-review.md",
+      "id": "T2",
+      "kind": "technique",
+      "title": "Input trace (source → sink)",
+      "line": 45,
+      "body_lines": 14,
+      "body_sha256": "43b88281a937c781333f8dc98134f3d485116ae63bb339dd0a58a81193f9fd1b",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/code-review/code-review.md#T3",
+      "file": "agents/code-review/code-review.md",
+      "id": "T3",
+      "kind": "technique",
+      "title": "Auth/authz logic review",
+      "line": 59,
+      "body_lines": 20,
+      "body_sha256": "de994592b77b09a8ba004dbe1885087754904cac63568a7d472a368c3357b86d",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/code-review/code-review.md#T4",
+      "file": "agents/code-review/code-review.md",
+      "id": "T4",
+      "kind": "technique",
+      "title": "Secrets / hardcoded credentials grep",
+      "line": 79,
+      "body_lines": 27,
+      "body_sha256": "7d678b17c3e5b3b6460536982b9dddced8a42916783a7b157885a38d9488e27d",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/code-review/code-review.md#T5",
+      "file": "agents/code-review/code-review.md",
+      "id": "T5",
+      "kind": "technique",
+      "title": "Dependency / supply-chain check",
+      "line": 106,
+      "body_lines": 24,
+      "body_sha256": "76510b0cfd045057539295e5da590c3f5ab1c0c33c409c01c2585e95ea239bac",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/code-review/code-review.md#T6",
+      "file": "agents/code-review/code-review.md",
+      "id": "T6",
+      "kind": "technique",
+      "title": "Deserialization review",
+      "line": 130,
+      "body_lines": 20,
+      "body_sha256": "b52a910ea226ccaeb5637c7e79ed0f2559b6dfd1335fc21f4f3695fbb89b2a22",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/code-review/code-review.md#T7",
+      "file": "agents/code-review/code-review.md",
+      "id": "T7",
+      "kind": "technique",
+      "title": "SQL query construction review",
+      "line": 150,
+      "body_lines": 14,
+      "body_sha256": "477b15f078f583e8de170111bc0c4054fd465749bfa13df80c83452d9c6e32fd",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/code-review/code-review.md#T8",
+      "file": "agents/code-review/code-review.md",
+      "id": "T8",
+      "kind": "technique",
+      "title": "File operation review",
+      "line": 164,
+      "body_lines": 19,
+      "body_sha256": "00e17b64cce49c867f743a8aca2f77180867a8569f581ca90239f67cefe4d998",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/code-review/code-review.md#T9",
+      "file": "agents/code-review/code-review.md",
+      "id": "T9",
+      "kind": "technique",
+      "title": "Crypto misuse review",
+      "line": 183,
+      "body_lines": 24,
+      "body_sha256": "d2edb2dc591091323c70335a9f5e3bb0cedac3feb7bf1e3ce112c6f81d18dd30",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/credential-review/credential-review.md#T1",
+      "file": "agents/credential-review/credential-review.md",
+      "id": "T1",
+      "kind": "technique",
+      "title": "LSASS MiniDump via comsvcs.dll",
+      "line": 19,
+      "body_lines": 14,
+      "body_sha256": "fd2e46468fb5004f295accd215dd56524e5f65bb4f6b66150b7877a4af648d0c",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/credential-review/credential-review.md#T2",
+      "file": "agents/credential-review/credential-review.md",
+      "id": "T2",
+      "kind": "technique",
+      "title": "SAM/SYSTEM hive copy (local hashes)",
+      "line": 33,
+      "body_lines": 20,
+      "body_sha256": "9255440c7ccb6f87e9506b2bdfa2cea8af4e63718be2944a894480c00f46f923",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": true
+    },
+    {
+      "uid": "agents/credential-review/credential-review.md#T3",
+      "file": "agents/credential-review/credential-review.md",
+      "id": "T3",
+      "kind": "technique",
+      "title": "DPAPI secret decryption (browser/creds)",
+      "line": 53,
+      "body_lines": 16,
+      "body_sha256": "a772674fe67fdcdd4f9a3282225f996436c4d190c187addc7f4a7bdf5debd333",
+      "fields": [
+        "Escalation",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "1-python",
+      "has_payload": false,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/credential-review/credential-review.md#T4",
+      "file": "agents/credential-review/credential-review.md",
+      "id": "T4",
+      "kind": "technique",
+      "title": "Offline hash extraction from hives",
+      "line": 69,
+      "body_lines": 11,
+      "body_sha256": "c0707364dafb6b689f63e94e16acabbd145b76b6fa25c2f506ebb6efa5e97c7a",
+      "fields": [
+        "Escalation",
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "1-python",
+      "has_payload": true,
+      "is_pointer": true
+    },
+    {
+      "uid": "agents/credential-review/credential-review.md#T5",
+      "file": "agents/credential-review/credential-review.md",
+      "id": "T5",
+      "kind": "technique",
+      "title": "Credential Manager / cmdkey harvest",
+      "line": 80,
+      "body_lines": 18,
+      "body_sha256": "b411aea44457e740fcb899097063341d408bae3617f29b4662f7d0a1f40cf66f",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/credential-review/credential-review.md#T6",
+      "file": "agents/credential-review/credential-review.md",
+      "id": "T6",
+      "kind": "technique",
+      "title": "Browser saved-credential store",
+      "line": 98,
+      "body_lines": 14,
+      "body_sha256": "9fab51fa75a9beb2c4e80eb941508420675f2026bf99993852aeadcd891a3daf",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/credential-review/credential-review.md#T7",
+      "file": "agents/credential-review/credential-review.md",
+      "id": "T7",
+      "kind": "technique",
+      "title": "Process memory / clipboard / history scrape",
+      "line": 112,
+      "body_lines": 14,
+      "body_sha256": "eb710cac92d14cb8e0aeb80ae3987b687a3c1cf30ee04a041a95669031bda89e",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/data-egress-check/data-egress-check.md#T1",
+      "file": "agents/data-egress-check/data-egress-check.md",
+      "id": "T1",
+      "kind": "technique",
+      "title": "HTTP(S) POST exfil",
+      "line": 16,
+      "body_lines": 14,
+      "body_sha256": "21fe3f60b7d6a8789e776cd914e470c5b94a776f7efb11728a4b1895fbfa5802",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/data-egress-check/data-egress-check.md#T2",
+      "file": "agents/data-egress-check/data-egress-check.md",
+      "id": "T2",
+      "kind": "technique",
+      "title": "DNS exfil",
+      "line": 30,
+      "body_lines": 34,
+      "body_sha256": "1a7065a297403206f5a5cc008a69ca0749ccd6caa2eeb08dc1951331fd52bdb0",
+      "fields": [
+        "Escalation",
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "1-python",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/data-egress-check/data-egress-check.md#T3",
+      "file": "agents/data-egress-check/data-egress-check.md",
+      "id": "T3",
+      "kind": "technique",
+      "title": "Stage-encode-chunk",
+      "line": 64,
+      "body_lines": 27,
+      "body_sha256": "91deeda670c9431350d1e2a20349c96cef6eb3a6956e21c4c6c5359f75f8e906",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/data-egress-check/data-egress-check.md#T4",
+      "file": "agents/data-egress-check/data-egress-check.md",
+      "id": "T4",
+      "kind": "technique",
+      "title": "SMB / share exfil",
+      "line": 91,
+      "body_lines": 18,
+      "body_sha256": "b134713ed88ade62f09c741a38a1d64cd121b319929e2fdef84cb78e1a09a659",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/directory-review/directory-review.md#T1",
+      "file": "agents/directory-review/directory-review.md",
+      "id": "T1",
+      "kind": "technique",
+      "title": "Domain context & current-user groups",
+      "line": 21,
+      "body_lines": 16,
+      "body_sha256": "5c4e96518f00d5f516cfdb3492c0f6881b836273430efaf4eb57f2932c96a5a6",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/directory-review/directory-review.md#T2",
+      "file": "agents/directory-review/directory-review.md",
+      "id": "T2",
+      "kind": "technique",
+      "title": "LDAP user/computer enumeration via DirectorySearcher",
+      "line": 37,
+      "body_lines": 19,
+      "body_sha256": "597c2f04be254a161fb0ae41f29d193ed81b3e6e78bc623708ed0f16ef40f5e5",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/directory-review/directory-review.md#T3",
+      "file": "agents/directory-review/directory-review.md",
+      "id": "T3",
+      "kind": "technique",
+      "title": "SPN enumeration (service-account ticket extraction targeting)",
+      "line": 56,
+      "body_lines": 15,
+      "body_sha256": "37295b5dc28efc463c081b5fe751a32e6dd2be6670524083ca4f361fbb7fa258",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/directory-review/directory-review.md#T4",
+      "file": "agents/directory-review/directory-review.md",
+      "id": "T4",
+      "kind": "technique",
+      "title": "Manual service-account ticket extraction (request + extract ticket)",
+      "line": 71,
+      "body_lines": 16,
+      "body_sha256": "389e0ac654403bcf1354410109e3748f56e7623296e4cea9a52dd86696d132ad",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "Variations",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/directory-review/directory-review.md#T5",
+      "file": "agents/directory-review/directory-review.md",
+      "id": "T5",
+      "kind": "technique",
+      "title": "No-preauth ticket extraction (no-preauth accounts)",
+      "line": 87,
+      "body_lines": 16,
+      "body_sha256": "7f2659d0c006b5b280f1a943e0446b21a4066e58b7209ef0fefa667d703fe6ca",
+      "fields": [
+        "Escalation",
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "1-python",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/directory-review/directory-review.md#T6",
+      "file": "agents/directory-review/directory-review.md",
+      "id": "T6",
+      "kind": "technique",
+      "title": "ACL / ownership abuse discovery",
+      "line": 103,
+      "body_lines": 15,
+      "body_sha256": "eea20445f8ade5a0fe39158da0003835640b26dd87ce7ae819ca573a0fa60bb7",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/directory-review/directory-review.md#T7",
+      "file": "agents/directory-review/directory-review.md",
+      "id": "T7",
+      "kind": "technique",
+      "title": "Domain trust & foreign-membership map",
+      "line": 118,
+      "body_lines": 15,
+      "body_sha256": "3ffec38908087b082826d5f533ef3000be1e82e02c28c9d2b33f43094e9a17e0",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/directory-review/directory-review.md#T8",
+      "file": "agents/directory-review/directory-review.md",
+      "id": "T8",
+      "kind": "technique",
+      "title": "GPP / SYSVOL credential hunt",
+      "line": 133,
+      "body_lines": 15,
+      "body_sha256": "dd57a399b216560cbf8797af82bcc9d3ab4896f360526ba8ef586f9011e6b57b",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/directory-review/directory-review.md#T9",
+      "file": "agents/directory-review/directory-review.md",
+      "id": "T9",
+      "kind": "technique",
+      "title": "Unconstrained/constrained/RBCD delegation discovery",
+      "line": 148,
+      "body_lines": 15,
+      "body_sha256": "bd130852c8d6791901f64067ad84747128a0aff2ef7c0f9ff3ababa2e311dad0",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/evidence-hygiene/evidence-hygiene.md#T1",
+      "file": "agents/evidence-hygiene/evidence-hygiene.md",
+      "id": "T1",
+      "kind": "technique",
+      "title": "Screenshot / terminal capture",
+      "line": 25,
+      "body_lines": 17,
+      "body_sha256": "c20c5c515cc1f383d8d92a173e6b463551752a886b8b85964d6592334929a658",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/evidence-hygiene/evidence-hygiene.md#T2",
+      "file": "agents/evidence-hygiene/evidence-hygiene.md",
+      "id": "T2",
+      "kind": "technique",
+      "title": "Request/response logging",
+      "line": 42,
+      "body_lines": 21,
+      "body_sha256": "b1b56cf3b0ef9e0cc2bac9b015a71ce87e53729e68763ac59b4a167d082b4ad6",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/evidence-hygiene/evidence-hygiene.md#T3",
+      "file": "agents/evidence-hygiene/evidence-hygiene.md",
+      "id": "T3",
+      "kind": "technique",
+      "title": "Redaction protocol",
+      "line": 63,
+      "body_lines": 26,
+      "body_sha256": "2ce9c7967541959cc5ea6fecafbf805626c564ef243b6c0ee51d5f0dcc63d79d",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/evidence-hygiene/evidence-hygiene.md#T4",
+      "file": "agents/evidence-hygiene/evidence-hygiene.md",
+      "id": "T4",
+      "kind": "technique",
+      "title": "Hash-based proof",
+      "line": 89,
+      "body_lines": 20,
+      "body_sha256": "b19d6b5e04ffbf09d7a0281b612c0990eafc61524a6f8babbddf25fa3bc4a7af",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/evidence-hygiene/evidence-hygiene.md#T5",
+      "file": "agents/evidence-hygiene/evidence-hygiene.md",
+      "id": "T5",
+      "kind": "technique",
+      "title": "Evidence organization",
+      "line": 109,
+      "body_lines": 21,
+      "body_sha256": "fafb243485e7b96e379ffc723fac26a4bb55fb082debbdabd707d16299ad6cd2",
+      "fields": [
+        "Naming",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": false,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/foothold-durability/foothold-durability.md#T1",
+      "file": "agents/foothold-durability/foothold-durability.md",
+      "id": "T1",
+      "kind": "technique",
+      "title": "Registry Run/RunOnce key",
+      "line": 18,
+      "body_lines": 13,
+      "body_sha256": "8fff031b0e14c5e23b26e6a0944677ed153f93c96e5c4abd3034f1e605e4b023",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/foothold-durability/foothold-durability.md#T2",
+      "file": "agents/foothold-durability/foothold-durability.md",
+      "id": "T2",
+      "kind": "technique",
+      "title": "Scheduled task persistence",
+      "line": 31,
+      "body_lines": 15,
+      "body_sha256": "298dd84703c533b76b56dd036a26d668125201246d89c236a96e7fa6d546e4b7",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/foothold-durability/foothold-durability.md#T3",
+      "file": "agents/foothold-durability/foothold-durability.md",
+      "id": "T3",
+      "kind": "technique",
+      "title": "Service install persistence",
+      "line": 46,
+      "body_lines": 13,
+      "body_sha256": "665028765ae094f24de1cfc2c755e0c27606c78056e74e8c04b618057b9ba6b0",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/foothold-durability/foothold-durability.md#T4",
+      "file": "agents/foothold-durability/foothold-durability.md",
+      "id": "T4",
+      "kind": "technique",
+      "title": "WMI permanent event subscription",
+      "line": 59,
+      "body_lines": 15,
+      "body_sha256": "35c987650d1cc507c82e536d9942b019d81efabf74b1d70d249c08d6bf1f974e",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/foothold-durability/foothold-durability.md#T5",
+      "file": "agents/foothold-durability/foothold-durability.md",
+      "id": "T5",
+      "kind": "technique",
+      "title": "Startup folder / logon script",
+      "line": 74,
+      "body_lines": 13,
+      "body_sha256": "2624e6cc7cdedc9be410968733a01cfd007cd78be3fae831b08e50abbf260b3f",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/foothold-durability/foothold-durability.md#T6",
+      "file": "agents/foothold-durability/foothold-durability.md",
+      "id": "T6",
+      "kind": "technique",
+      "title": "COM hijack",
+      "line": 87,
+      "body_lines": 14,
+      "body_sha256": "7a9ebc9c3967b7b955495c17d1a30230aa656fbcdb016bc220fb7a4cb01d468a",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/forge/forge.md#B1",
+      "file": "agents/forge/forge.md",
+      "id": "B1",
+      "kind": "blueprint",
+      "title": "Port scanner",
+      "line": 29,
+      "body_lines": 55,
+      "body_sha256": "a5eb82bddea0ec1f670709d515312ed9ba1c431a7d9a4a180d20f2bf78df54be",
+      "fields": [
+        "Build",
+        "Purpose",
+        "Runtime"
+      ],
+      "tier": null,
+      "has_payload": false,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/forge/forge.md#B10",
+      "file": "agents/forge/forge.md",
+      "id": "B10",
+      "kind": "blueprint",
+      "title": "Port forwarder / relay",
+      "line": 253,
+      "body_lines": 36,
+      "body_sha256": "93d45d8fe40c57f7e3e5c1690a39d1af8fde66c3d22dfdf0321083a6160e4d01",
+      "fields": [
+        "Purpose",
+        "Runtime"
+      ],
+      "tier": null,
+      "has_payload": false,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/forge/forge.md#B11",
+      "file": "agents/forge/forge.md",
+      "id": "B11",
+      "kind": "blueprint",
+      "title": "JS deobfuscator",
+      "line": 289,
+      "body_lines": 36,
+      "body_sha256": "da3870104b6edc6cf005a3ed6eab1072a4398c3a5f81baeda23f8e420fddda61",
+      "fields": [
+        "Purpose",
+        "Runtime"
+      ],
+      "tier": null,
+      "has_payload": false,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/forge/forge.md#B12",
+      "file": "agents/forge/forge.md",
+      "id": "B12",
+      "kind": "blueprint",
+      "title": "AD enum collector",
+      "line": 325,
+      "body_lines": 23,
+      "body_sha256": "edd84db3d046dbdba1c501b773c5fcda67efdcd50e7a222e03464bb9e0378100",
+      "fields": [
+        "Purpose",
+        "Runtime"
+      ],
+      "tier": null,
+      "has_payload": false,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/forge/forge.md#B13",
+      "file": "agents/forge/forge.md",
+      "id": "B13",
+      "kind": "blueprint",
+      "title": "Hash helper",
+      "line": 348,
+      "body_lines": 21,
+      "body_sha256": "b7e48eb12919164edb19a6f5f7135306726863f6096ccc0800e4ea0cfe981dc3",
+      "fields": [
+        "Purpose",
+        "Runtime"
+      ],
+      "tier": null,
+      "has_payload": false,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/forge/forge.md#B14",
+      "file": "agents/forge/forge.md",
+      "id": "B14",
+      "kind": "blueprint",
+      "title": "Reverse shell handler",
+      "line": 369,
+      "body_lines": 30,
+      "body_sha256": "f6ff31ee2189592ed1d908f85bbf7f3e3a46695b94f4a7885adebdc6c848e178",
+      "fields": [
+        "Purpose",
+        "Runtime"
+      ],
+      "tier": null,
+      "has_payload": false,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/forge/forge.md#B15",
+      "file": "agents/forge/forge.md",
+      "id": "B15",
+      "kind": "blueprint",
+      "title": "DNS exfil server",
+      "line": 399,
+      "body_lines": 32,
+      "body_sha256": "91767b1ef692f001689ecf5ef3bdff1327d745264263f720559125f66edcf115",
+      "fields": [
+        "Purpose",
+        "Runtime"
+      ],
+      "tier": null,
+      "has_payload": false,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/forge/forge.md#B2",
+      "file": "agents/forge/forge.md",
+      "id": "B2",
+      "kind": "blueprint",
+      "title": "Content buster",
+      "line": 84,
+      "body_lines": 3,
+      "body_sha256": "c6ca303b405a9e7bb69abe804f97edebab583e5a6457d05768b34a0f60541600",
+      "fields": [],
+      "tier": null,
+      "has_payload": false,
+      "is_pointer": true
+    },
+    {
+      "uid": "agents/forge/forge.md#B3",
+      "file": "agents/forge/forge.md",
+      "id": "B3",
+      "kind": "blueprint",
+      "title": "Subdomain brute",
+      "line": 87,
+      "body_lines": 25,
+      "body_sha256": "645eefcf2edb58a97729bc236611fbe5faa9624dbbbed33dfa6ffa6b6ee49b26",
+      "fields": [
+        "Purpose",
+        "Runtime"
+      ],
+      "tier": null,
+      "has_payload": false,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/forge/forge.md#B4",
+      "file": "agents/forge/forge.md",
+      "id": "B4",
+      "kind": "blueprint",
+      "title": "Wordlist generator",
+      "line": 112,
+      "body_lines": 23,
+      "body_sha256": "a012954db2e779962202fc7f281f9e2d99425e8f2d423326306ea1b1637c2f63",
+      "fields": [
+        "Purpose",
+        "Runtime"
+      ],
+      "tier": null,
+      "has_payload": false,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/forge/forge.md#B5",
+      "file": "agents/forge/forge.md",
+      "id": "B5",
+      "kind": "blueprint",
+      "title": "Param miner",
+      "line": 135,
+      "body_lines": 28,
+      "body_sha256": "2793c95763e9312651124a3a7e339748b1762b33e1d6c31203c027ce8fa92db9",
+      "fields": [
+        "Purpose",
+        "Runtime"
+      ],
+      "tier": null,
+      "has_payload": false,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/forge/forge.md#B6",
+      "file": "agents/forge/forge.md",
+      "id": "B6",
+      "kind": "blueprint",
+      "title": "Raw-socket smuggler",
+      "line": 163,
+      "body_lines": 3,
+      "body_sha256": "d434db5f7a817334f6a3806d8a93f8e151a5896adc7c2948e5a04686d3a2cd0f",
+      "fields": [],
+      "tier": null,
+      "has_payload": false,
+      "is_pointer": true
+    },
+    {
+      "uid": "agents/forge/forge.md#B7",
+      "file": "agents/forge/forge.md",
+      "id": "B7",
+      "kind": "blueprint",
+      "title": "JWT toolkit",
+      "line": 166,
+      "body_lines": 54,
+      "body_sha256": "de19a90f4f7e54750b81d2157bed5871d6f8a6f01c18c0bd7cbe0ecd413ba7cb",
+      "fields": [
+        "Purpose",
+        "Runtime"
+      ],
+      "tier": null,
+      "has_payload": false,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/forge/forge.md#B8",
+      "file": "agents/forge/forge.md",
+      "id": "B8",
+      "kind": "blueprint",
+      "title": "Callback / OAST server",
+      "line": 220,
+      "body_lines": 30,
+      "body_sha256": "707e71bb30aa60afcc1ed40fc8ddbe119c38dce78d5f02380b0572edac61fcfb",
+      "fields": [
+        "Purpose",
+        "Runtime"
+      ],
+      "tier": null,
+      "has_payload": false,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/forge/forge.md#B9",
+      "file": "agents/forge/forge.md",
+      "id": "B9",
+      "kind": "blueprint",
+      "title": "SQLi extractor",
+      "line": 250,
+      "body_lines": 3,
+      "body_sha256": "de005100d3c4ed1e66d769b3d5602649713b157dbd0dd938f250093ad30f79c3",
+      "fields": [],
+      "tier": null,
+      "has_payload": false,
+      "is_pointer": true
+    },
+    {
+      "uid": "agents/host-inventory/host-inventory.md#T1",
+      "file": "agents/host-inventory/host-inventory.md",
+      "id": "T1",
+      "kind": "technique",
+      "title": "Identity & privilege baseline",
+      "line": 23,
+      "body_lines": 18,
+      "body_sha256": "b3efee38e3f8c4417f254f44d41e8756738bb679f27519089cc0aa7b2fd649d1",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/host-inventory/host-inventory.md#T10",
+      "file": "agents/host-inventory/host-inventory.md",
+      "id": "T10",
+      "kind": "technique",
+      "title": "Installed software & version inventory",
+      "line": 180,
+      "body_lines": 15,
+      "body_sha256": "dc56d35fe06d9e9eeb73d56374b282c8c4f63ea1c99f0e9ca6b260f3f63a2149",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/host-inventory/host-inventory.md#T2",
+      "file": "agents/host-inventory/host-inventory.md",
+      "id": "T2",
+      "kind": "technique",
+      "title": "System & patch fingerprint",
+      "line": 41,
+      "body_lines": 17,
+      "body_sha256": "9c88adf0e3746e25edb17b53a5101bac12d9c1ec03acfa58c43e2ebcc7819681",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/host-inventory/host-inventory.md#T3",
+      "file": "agents/host-inventory/host-inventory.md",
+      "id": "T3",
+      "kind": "technique",
+      "title": "Service misconfiguration sweep",
+      "line": 58,
+      "body_lines": 20,
+      "body_sha256": "0e051dffc3dcaab08471cdf3e547b0a7a9f8e070d741d2a54a2e91eaeb98cb2e",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/host-inventory/host-inventory.md#T4",
+      "file": "agents/host-inventory/host-inventory.md",
+      "id": "T4",
+      "kind": "technique",
+      "title": "Scheduled task & autorun enum",
+      "line": 78,
+      "body_lines": 17,
+      "body_sha256": "3e7595285f35454da4eada0a43bbd68bc11effdd78718688458cd25a66bee9a4",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/host-inventory/host-inventory.md#T5",
+      "file": "agents/host-inventory/host-inventory.md",
+      "id": "T5",
+      "kind": "technique",
+      "title": "Credential-in-config / registry sweep",
+      "line": 95,
+      "body_lines": 17,
+      "body_sha256": "eb52f70c9b9a36c6595c0e2e5c951cf318c0126708192ec3d033907dc57878d9",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/host-inventory/host-inventory.md#T6",
+      "file": "agents/host-inventory/host-inventory.md",
+      "id": "T6",
+      "kind": "technique",
+      "title": "Network position & listening services",
+      "line": 112,
+      "body_lines": 18,
+      "body_sha256": "06d73f312758857713d0dfe657f827200052323d4dc2ed4a7873748dc537f906",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/host-inventory/host-inventory.md#T7",
+      "file": "agents/host-inventory/host-inventory.md",
+      "id": "T7",
+      "kind": "technique",
+      "title": "Native TCP port scan (no scanner installed)",
+      "line": 130,
+      "body_lines": 19,
+      "body_sha256": "df38cd859ad76a256f1325b15ed9e4d61d2acf96fbb88004601bb0af44b186b6",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/host-inventory/host-inventory.md#T8",
+      "file": "agents/host-inventory/host-inventory.md",
+      "id": "T8",
+      "kind": "technique",
+      "title": "Concurrent port/host scan at scale",
+      "line": 149,
+      "body_lines": 11,
+      "body_sha256": "8c4ac5c8623c8536a54fee114aee1a085577589625a6d110d9c3a3aa529f4f79",
+      "fields": [
+        "Escalation",
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "1-go",
+      "has_payload": true,
+      "is_pointer": true
+    },
+    {
+      "uid": "agents/host-inventory/host-inventory.md#T9",
+      "file": "agents/host-inventory/host-inventory.md",
+      "id": "T9",
+      "kind": "technique",
+      "title": "SMB / share enumeration",
+      "line": 160,
+      "body_lines": 20,
+      "body_sha256": "f8358e30a1809deb3acf47ba54772443ddb819ce1b2312c941943a4ce8688d67",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/host-to-host-access/host-to-host-access.md#T1",
+      "file": "agents/host-to-host-access/host-to-host-access.md",
+      "id": "T1",
+      "kind": "technique",
+      "title": "WinRM remote exec (Invoke-Command)",
+      "line": 19,
+      "body_lines": 16,
+      "body_sha256": "8c75ccf096a92aaaa8f93d0424a682ed731466cca9bd406fb665571fda6c4232",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/host-to-host-access/host-to-host-access.md#T2",
+      "file": "agents/host-to-host-access/host-to-host-access.md",
+      "id": "T2",
+      "kind": "technique",
+      "title": "WMI remote process create",
+      "line": 35,
+      "body_lines": 16,
+      "body_sha256": "b8ddc2731da06b3a62d5a00f74a0158550ac6f44886159ee5945e3ba566550da",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/host-to-host-access/host-to-host-access.md#T3",
+      "file": "agents/host-to-host-access/host-to-host-access.md",
+      "id": "T3",
+      "kind": "technique",
+      "title": "Remote service create/run (sc \\\\host)",
+      "line": 51,
+      "body_lines": 15,
+      "body_sha256": "c8f8815c89e03d865be6ccba456230442f779b7910db239000ed5231ddcdf337",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/host-to-host-access/host-to-host-access.md#T4",
+      "file": "agents/host-to-host-access/host-to-host-access.md",
+      "id": "T4",
+      "kind": "technique",
+      "title": "Remote scheduled task",
+      "line": 66,
+      "body_lines": 15,
+      "body_sha256": "12f476b63259352944a601549962e764ac03a07adb52e2d826d54a98f2da5f9b",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/host-to-host-access/host-to-host-access.md#T5",
+      "file": "agents/host-to-host-access/host-to-host-access.md",
+      "id": "T5",
+      "kind": "technique",
+      "title": "Hash-based authentication with native/forged tooling",
+      "line": 81,
+      "body_lines": 12,
+      "body_sha256": "a3fcfa05d8b50f108ebcc72dd241818e1774eb7fcb3bfcaef30b4690502cb2e8",
+      "fields": [
+        "Escalation",
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "Variations",
+        "When",
+        "Why"
+      ],
+      "tier": "1-go",
+      "has_payload": true,
+      "is_pointer": true
+    },
+    {
+      "uid": "agents/host-to-host-access/host-to-host-access.md#T6",
+      "file": "agents/host-to-host-access/host-to-host-access.md",
+      "id": "T6",
+      "kind": "technique",
+      "title": "SMB file-based exec staging",
+      "line": 93,
+      "body_lines": 15,
+      "body_sha256": "ac71ca793a11d4c7fa6147398489577a9cf04c4dbcb99768cb941ab9565cfcd8",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/host-to-host-access/host-to-host-access.md#T7",
+      "file": "agents/host-to-host-access/host-to-host-access.md",
+      "id": "T7",
+      "kind": "technique",
+      "title": "MSSQL linked-server / xp_cmdshell pivot",
+      "line": 108,
+      "body_lines": 15,
+      "body_sha256": "a28325c6996cfa3d8d4ae2c8d3d42f6ac1888fca3353bd95c56ceefc1c2e19dc",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/privilege-review/windows.md#T1",
+      "file": "agents/privilege-review/windows.md",
+      "id": "T1",
+      "kind": "technique",
+      "title": "Unquoted service path hijack",
+      "line": 21,
+      "body_lines": 16,
+      "body_sha256": "2413fb93593bef7366fdeb856aac1b03a1aa979b5ba1ca84b209a97c77dd40db",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/privilege-review/windows.md#T2",
+      "file": "agents/privilege-review/windows.md",
+      "id": "T2",
+      "kind": "technique",
+      "title": "Weak service binary / ACL → replace binary",
+      "line": 37,
+      "body_lines": 17,
+      "body_sha256": "62c832b2aa4ddf27673a3e3867e69b357d31479a30f44b020431a3eb67091272",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/privilege-review/windows.md#T3",
+      "file": "agents/privilege-review/windows.md",
+      "id": "T3",
+      "kind": "technique",
+      "title": "AlwaysInstallElevated MSI",
+      "line": 54,
+      "body_lines": 16,
+      "body_sha256": "6fec83d9e6b31932b21a6554eb9974f561f6eab213d5b7db1bdc64e6c5aa5700",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/privilege-review/windows.md#T4",
+      "file": "agents/privilege-review/windows.md",
+      "id": "T4",
+      "kind": "technique",
+      "title": "Scheduled task hijack",
+      "line": 70,
+      "body_lines": 17,
+      "body_sha256": "2ed41aa4f52431f1b12cb865f0d58276d00a90699f86bf4f4d407ae6155cf1d6",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/privilege-review/windows.md#T5",
+      "file": "agents/privilege-review/windows.md",
+      "id": "T5",
+      "kind": "technique",
+      "title": "SeImpersonate token abuse (token-impersonation)",
+      "line": 87,
+      "body_lines": 17,
+      "body_sha256": "a26ff93254dc7cd03370c3ac4f8e91603e51cc75d0cf09b243dbce4f354a47cf",
+      "fields": [
+        "Escalation",
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "Variations",
+        "When",
+        "Why"
+      ],
+      "tier": "1-go",
+      "has_payload": true,
+      "is_pointer": true
+    },
+    {
+      "uid": "agents/privilege-review/windows.md#T6",
+      "file": "agents/privilege-review/windows.md",
+      "id": "T6",
+      "kind": "technique",
+      "title": "SeBackup/SeRestore → SAM/SYSTEM read",
+      "line": 104,
+      "body_lines": 14,
+      "body_sha256": "37891713143874aea3d4d4a4c5dc2269b6cf358382d346a51f653eda9665fff9",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": true
+    },
+    {
+      "uid": "agents/privilege-review/windows.md#T7",
+      "file": "agents/privilege-review/windows.md",
+      "id": "T7",
+      "kind": "technique",
+      "title": "DLL hijack / writable PATH dir",
+      "line": 118,
+      "body_lines": 13,
+      "body_sha256": "ad412189da7a110ac4fcba1403316cfe4c73e3efd743c1c21e62fe3f3a310e4d",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/privilege-review/windows.md#T8",
+      "file": "agents/privilege-review/windows.md",
+      "id": "T8",
+      "kind": "technique",
+      "title": "UAC bypass via auto-elevate (fodhelper/sdclt)",
+      "line": 131,
+      "body_lines": 18,
+      "body_sha256": "7c0251c7a411d79a391b89066d8bbc054c0383f77b09fa2f16164aececd45927",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/privilege-review/windows.md#T9",
+      "file": "agents/privilege-review/windows.md",
+      "id": "T9",
+      "kind": "technique",
+      "title": "Stored-credential reuse → runas",
+      "line": 149,
+      "body_lines": 13,
+      "body_sha256": "69dde9e296cee952678aa8b2fdb40d8894f681bdbce35888505295f0ae1f66b8",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/telemetry-awareness/lolbins.md#T1",
+      "file": "agents/telemetry-awareness/lolbins.md",
+      "id": "T1",
+      "kind": "technique",
+      "title": "certutil — download / encode / hash",
+      "line": 21,
+      "body_lines": 15,
+      "body_sha256": "a374ce11a28c75b1c46c3304261476771d2846c4bae0b132bc123f6ee6b25955",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/telemetry-awareness/lolbins.md#T2",
+      "file": "agents/telemetry-awareness/lolbins.md",
+      "id": "T2",
+      "kind": "technique",
+      "title": "bitsadmin / Start-BitsTransfer — background download",
+      "line": 36,
+      "body_lines": 15,
+      "body_sha256": "c5bdbdaf60652b1ae714a8def352b7a7e928b0242db1aa1f4761ca7d6b95f175",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/telemetry-awareness/lolbins.md#T3",
+      "file": "agents/telemetry-awareness/lolbins.md",
+      "id": "T3",
+      "kind": "technique",
+      "title": "rundll32 — execute DLL export / JS",
+      "line": 51,
+      "body_lines": 13,
+      "body_sha256": "d9eb3d46906dbf5344b0a2323c3d259c137a6d26fd59a33c1ad4fab021dac760",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/telemetry-awareness/lolbins.md#T4",
+      "file": "agents/telemetry-awareness/lolbins.md",
+      "id": "T4",
+      "kind": "technique",
+      "title": "regsvr32 — scriptlet exec (squiblydoo)",
+      "line": 64,
+      "body_lines": 12,
+      "body_sha256": "30a2bb058fcc3e73f855b70742905156a9abc53a909b97f6cedac9a87555d389",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/telemetry-awareness/lolbins.md#T5",
+      "file": "agents/telemetry-awareness/lolbins.md",
+      "id": "T5",
+      "kind": "technique",
+      "title": "mshta — run HTA / inline script",
+      "line": 76,
+      "body_lines": 13,
+      "body_sha256": "a44e13c0a6007b89c0abb8ae6ed401667270b0d81ff7a1b075f153600eb92b5c",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/telemetry-awareness/lolbins.md#T6",
+      "file": "agents/telemetry-awareness/lolbins.md",
+      "id": "T6",
+      "kind": "technique",
+      "title": "msbuild / installutil — compile-and-run inline C#",
+      "line": 89,
+      "body_lines": 15,
+      "body_sha256": "d229bb46939faf385a3634afc2b12ed737ee91766e425f3905bbcdafa1c1ccc5",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/telemetry-awareness/lolbins.md#T7",
+      "file": "agents/telemetry-awareness/lolbins.md",
+      "id": "T7",
+      "kind": "technique",
+      "title": "comsvcs.dll MiniDump — LSASS dump",
+      "line": 104,
+      "body_lines": 8,
+      "body_sha256": "cd0759d23542f78414f9e6376136b8bd4e90f7e8ca7e86b565cbf6fcef04f19a",
+      "fields": [
+        "Payload",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": true
+    },
+    {
+      "uid": "agents/telemetry-awareness/lolbins.md#T8",
+      "file": "agents/telemetry-awareness/lolbins.md",
+      "id": "T8",
+      "kind": "technique",
+      "title": "wmic — query / remote process",
+      "line": 112,
+      "body_lines": 14,
+      "body_sha256": "d54089f5b15c0ea3a46a94d7985ed9b82d8b0802ca124f35457e8b31d80260de",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/telemetry-awareness/lolbins.md#T9",
+      "file": "agents/telemetry-awareness/lolbins.md",
+      "id": "T9",
+      "kind": "technique",
+      "title": "esentutl / vssadmin / wbadmin — locked-file copy",
+      "line": 126,
+      "body_lines": 12,
+      "body_sha256": "f655f1917c2761cf4e40371bc64dd6429ad4561a90c2637695cd0ab78f5dc042",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/telemetry-awareness/telemetry-awareness.md#T1",
+      "file": "agents/telemetry-awareness/telemetry-awareness.md",
+      "id": "T1",
+      "kind": "technique",
+      "title": "Telemetry footprint awareness",
+      "line": 16,
+      "body_lines": 16,
+      "body_sha256": "14c5036793b49bab611369530ece295ff490be38d43be35ed1c655b8344b7351",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/telemetry-awareness/telemetry-awareness.md#T2",
+      "file": "agents/telemetry-awareness/telemetry-awareness.md",
+      "id": "T2",
+      "kind": "technique",
+      "title": "PowerShell logging surfaces",
+      "line": 32,
+      "body_lines": 14,
+      "body_sha256": "72efba5e9c71edd13fd4342479df0ba8fd4188059b2f5c3b7797e08f92471ac4",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/telemetry-awareness/telemetry-awareness.md#T3",
+      "file": "agents/telemetry-awareness/telemetry-awareness.md",
+      "id": "T3",
+      "kind": "technique",
+      "title": "AMSI awareness",
+      "line": 46,
+      "body_lines": 9,
+      "body_sha256": "9bdeac365cf287a64e181256ad9c9cc068e92c8757a57765eb193689333fc1c1",
+      "fields": [
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": false,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/telemetry-awareness/telemetry-awareness.md#T4",
+      "file": "agents/telemetry-awareness/telemetry-awareness.md",
+      "id": "T4",
+      "kind": "technique",
+      "title": "Native artifact cleanup",
+      "line": 55,
+      "body_lines": 16,
+      "body_sha256": "437df7b357fbfdd25ea5414ebddddee061fdb6a88eb105ad70b6fae24e2222ee",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-inventory/web-inventory.md#T1",
+      "file": "agents/web-inventory/web-inventory.md",
+      "id": "T1",
+      "kind": "technique",
+      "title": "Header / technology fingerprint",
+      "line": 20,
+      "body_lines": 16,
+      "body_sha256": "23d110b2b044ef031b00c213b6d7612ed555447c1bacf19b9eb1b0ecf03d0dbb",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-inventory/web-inventory.md#T2",
+      "file": "agents/web-inventory/web-inventory.md",
+      "id": "T2",
+      "kind": "technique",
+      "title": "Content discovery (brute paths)",
+      "line": 36,
+      "body_lines": 45,
+      "body_sha256": "aec44314a839d4c094e375907039321ef67b992143f7518c4f697c3f723b9058",
+      "fields": [
+        "Escalation",
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "1-python",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-inventory/web-inventory.md#T3",
+      "file": "agents/web-inventory/web-inventory.md",
+      "id": "T3",
+      "kind": "technique",
+      "title": "Subdomain enumeration (passive + resolve)",
+      "line": 81,
+      "body_lines": 24,
+      "body_sha256": "920d5d8850ebfeff808ccffc994a3aa4f465bcf56e4abd627960abe8f355a94a",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-inventory/web-inventory.md#T4",
+      "file": "agents/web-inventory/web-inventory.md",
+      "id": "T4",
+      "kind": "technique",
+      "title": "JavaScript pull + grep",
+      "line": 105,
+      "body_lines": 28,
+      "body_sha256": "e9a7ece9908e7121e28b8154be22d48582a5c64f27ffb14948842e85db9b6d99",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-inventory/web-inventory.md#T5",
+      "file": "agents/web-inventory/web-inventory.md",
+      "id": "T5",
+      "kind": "technique",
+      "title": "Certificate transparency search",
+      "line": 133,
+      "body_lines": 16,
+      "body_sha256": "6512f09ac9636720c1bc75d93c0180db690439bace4310b89cd48714eaa6a0b1",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-inventory/web-inventory.md#T6",
+      "file": "agents/web-inventory/web-inventory.md",
+      "id": "T6",
+      "kind": "technique",
+      "title": "robots.txt / sitemap / well-known",
+      "line": 149,
+      "body_lines": 19,
+      "body_sha256": "4429c1aca08c0f609ddfce52b3d096e24b0b5a16e42ab82b771f60036dbc42bc",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-inventory/web-inventory.md#T7",
+      "file": "agents/web-inventory/web-inventory.md",
+      "id": "T7",
+      "kind": "technique",
+      "title": "API schema discovery",
+      "line": 168,
+      "body_lines": 24,
+      "body_sha256": "f70e8c7e45fb9710b47828de281c7d1effa5cb7309be8d5b51fda38ef6b82072",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-inventory/web-inventory.md#T8",
+      "file": "agents/web-inventory/web-inventory.md",
+      "id": "T8",
+      "kind": "technique",
+      "title": "Virtual host brute",
+      "line": 192,
+      "body_lines": 41,
+      "body_sha256": "ee2788a143de6b3835ca56a00527966851a48e610d42c7333776b48aa150644f",
+      "fields": [
+        "Escalation",
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "1-python",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-testing/web-testing.md#T1",
+      "file": "agents/web-testing/web-testing.md",
+      "id": "T1",
+      "kind": "technique",
+      "title": "Reflected XSS probe",
+      "line": 27,
+      "body_lines": 20,
+      "body_sha256": "78650c6b9e48eaea7c28e306f9f5898d1471c9d8b0c7234ce04dffb536303c63",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-testing/web-testing.md#T10",
+      "file": "agents/web-testing/web-testing.md",
+      "id": "T10",
+      "kind": "technique",
+      "title": "Insecure deserialization",
+      "line": 262,
+      "body_lines": 22,
+      "body_sha256": "7bcce60925037620164d23de2173b70bf485d442702d6f73b2ee8af266b3a1ec",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-testing/web-testing.md#T11",
+      "file": "agents/web-testing/web-testing.md",
+      "id": "T11",
+      "kind": "technique",
+      "title": "JWT attacks",
+      "line": 284,
+      "body_lines": 25,
+      "body_sha256": "ffbae1e39136f419f41021411766133d390cb85469dab1edbdd42e4f216a6a49",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-testing/web-testing.md#T12",
+      "file": "agents/web-testing/web-testing.md",
+      "id": "T12",
+      "kind": "technique",
+      "title": "Open redirect",
+      "line": 309,
+      "body_lines": 17,
+      "body_sha256": "b782dde63a47817c59a0d0771c51378c5186ce3340e6506dd13fa8a008957dd6",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-testing/web-testing.md#T13",
+      "file": "agents/web-testing/web-testing.md",
+      "id": "T13",
+      "kind": "technique",
+      "title": "CORS misconfiguration",
+      "line": 326,
+      "body_lines": 21,
+      "body_sha256": "c8af261a4c13faaa5ff2894edf45107eb655e871e8da5d374e54c66d5978615b",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-testing/web-testing.md#T14",
+      "file": "agents/web-testing/web-testing.md",
+      "id": "T14",
+      "kind": "technique",
+      "title": "Request smuggling",
+      "line": 347,
+      "body_lines": 53,
+      "body_sha256": "929b8c1a5226744dc40c5f9558d511fcba7e814c0f33c2d827445871eebac8d3",
+      "fields": [
+        "Escalation",
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "1-python",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-testing/web-testing.md#T15",
+      "file": "agents/web-testing/web-testing.md",
+      "id": "T15",
+      "kind": "technique",
+      "title": "Prototype pollution",
+      "line": 400,
+      "body_lines": 22,
+      "body_sha256": "a445dc114b26450ca114e64b0deb0f7b0c1631f538b8bfdf6e5d3b0f8d7a9355",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-testing/web-testing.md#T2",
+      "file": "agents/web-testing/web-testing.md",
+      "id": "T2",
+      "kind": "technique",
+      "title": "Stored XSS probe",
+      "line": 47,
+      "body_lines": 19,
+      "body_sha256": "052313e396e53f964b7ba364863658b7534ff3e70674400a124b179bdeb76c0b",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-testing/web-testing.md#T3",
+      "file": "agents/web-testing/web-testing.md",
+      "id": "T3",
+      "kind": "technique",
+      "title": "SQL injection (error/blind)",
+      "line": 66,
+      "body_lines": 27,
+      "body_sha256": "51a0390c4b773970fe0f69777071b83f4bf6c97ce3f13f44b78e144a6ed12186",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-testing/web-testing.md#T4",
+      "file": "agents/web-testing/web-testing.md",
+      "id": "T4",
+      "kind": "technique",
+      "title": "SQL injection extraction",
+      "line": 93,
+      "body_lines": 49,
+      "body_sha256": "4924315ed65689114252a0d76c7651946f51a1414932cba2fc5247834c126c7d",
+      "fields": [
+        "Escalation",
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "1-python",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-testing/web-testing.md#T5",
+      "file": "agents/web-testing/web-testing.md",
+      "id": "T5",
+      "kind": "technique",
+      "title": "IDOR / broken object-level auth",
+      "line": 142,
+      "body_lines": 18,
+      "body_sha256": "abd79de3c79693d9a2972971f0de0bfd3064aa671b66d39820209191008c2a5d",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-testing/web-testing.md#T6",
+      "file": "agents/web-testing/web-testing.md",
+      "id": "T6",
+      "kind": "technique",
+      "title": "SSRF",
+      "line": 160,
+      "body_lines": 24,
+      "body_sha256": "165229daa36efa60bca0450750ebe614296980ab1a0e205af71ae75a7c10ede9",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-testing/web-testing.md#T7",
+      "file": "agents/web-testing/web-testing.md",
+      "id": "T7",
+      "kind": "technique",
+      "title": "SSTI (Server-Side Template Injection)",
+      "line": 184,
+      "body_lines": 21,
+      "body_sha256": "6a3ddf22086ef38ecf8f2a96f86c12422bbe21d1833021a747101d787be89b1b",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-testing/web-testing.md#T8",
+      "file": "agents/web-testing/web-testing.md",
+      "id": "T8",
+      "kind": "technique",
+      "title": "Authentication bypass",
+      "line": 205,
+      "body_lines": 26,
+      "body_sha256": "d8c192596a243b1c0079bb17bee584c7f82e01f909d7b9999b628b8e49b73f70",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    },
+    {
+      "uid": "agents/web-testing/web-testing.md#T9",
+      "file": "agents/web-testing/web-testing.md",
+      "id": "T9",
+      "kind": "technique",
+      "title": "File upload / path traversal",
+      "line": 231,
+      "body_lines": 31,
+      "body_sha256": "d5a1bc0a91a3506dbe40304b0120579321bab9cc42c688d090cbd9b37c0a25bd",
+      "fields": [
+        "Payload",
+        "Signal",
+        "Source",
+        "Steps",
+        "Tags",
+        "Tier",
+        "When",
+        "Why"
+      ],
+      "tier": "0-native",
+      "has_payload": true,
+      "is_pointer": false
+    }
+  ],
+  "findings": [
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/chaos/chaos.md#T1 (Parameter fuzz (web)): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/chaos/chaos.md#T2 (Header injection fuzz): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/chaos/chaos.md#T3 (Method tampering): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/chaos/chaos.md#T4 (Content-type juggling): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/chaos/chaos.md#T5 (Rate limit / brute force): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/chaos/chaos.md#T6 (Unicode / encoding fuzz): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/chaos/chaos.md#T7 (File format fuzz): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/chaos/chaos.md#T8 (Windows service fuzz): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/code-review/code-review.md#T6 (Deserialization review): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/code-review/code-review.md#T7 (SQL query construction review): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/code-review/code-review.md#T8 (File operation review): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/code-review/code-review.md#T9 (Crypto misuse review): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/code-review/code-review.md#T11 (Automated sink scanner): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/evidence-hygiene/evidence-hygiene.md#T1 (Screenshot / terminal capture): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/evidence-hygiene/evidence-hygiene.md#T2 (Request/response logging): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/evidence-hygiene/evidence-hygiene.md#T4 (Hash-based proof): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/forge/forge.md#B2 (Content buster) [blueprint-ponteiro]: delega a outro catálogo (sem corpo próprio — dedup intencional)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/forge/forge.md#B6 (Raw-socket smuggler) [blueprint-ponteiro]: delega a outro catálogo (sem corpo próprio — dedup intencional)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/forge/forge.md#B9 (SQLi extractor) [blueprint-ponteiro]: delega a outro catálogo (sem corpo próprio — dedup intencional)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/telemetry-awareness/lolbins.md#T1 (certutil — download / encode / hash): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/telemetry-awareness/lolbins.md#T2 (bitsadmin / Start-BitsTransfer — background download): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/telemetry-awareness/lolbins.md#T3 (rundll32 — execute DLL export / JS): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/telemetry-awareness/lolbins.md#T4 (regsvr32 — scriptlet exec (squiblydoo)): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/telemetry-awareness/lolbins.md#T5 (mshta — run HTA / inline script): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/telemetry-awareness/lolbins.md#T6 (msbuild / installutil — compile-and-run inline C#): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/telemetry-awareness/lolbins.md#T7 (comsvcs.dll MiniDump — LSASS dump): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/telemetry-awareness/lolbins.md#T8 (wmic — query / remote process): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    },
+    {
+      "severity": "INFO",
+      "check": "C3_fields",
+      "message": "agents/telemetry-awareness/lolbins.md#T9 (esentutl / vssadmin / wbadmin — locked-file copy): procedimento embutido no Payload (sem campo Steps rotulado — variância de formato pré-existente)"
+    }
+  ],
+  "equivalence_set": {
+    "technique_body_hashes": {
+      "agents/chaos/chaos.md#T1": "bf8eb46bf6949c7910bdf7240212b52bb09ce7e436405b1e61519f4a641d97f9",
+      "agents/chaos/chaos.md#T2": "c15ebfd55ff9b00ee2413e94aa34731188a8079dd5a2aa1e271f49f08fa917dd",
+      "agents/chaos/chaos.md#T3": "7a6b84f6b90530fa4262d11608487dace454a80691c2eef29df6b4850a6f7e2e",
+      "agents/chaos/chaos.md#T4": "3d927f0922ab7c94a6ed1cb7ccf696d0edea61712479713b9594c0f091e4d2fd",
+      "agents/chaos/chaos.md#T5": "90aa52c6752759b6b9a2ce858ac083f34df104ea89a230da935f14f92b96b4e6",
+      "agents/chaos/chaos.md#T6": "5c37959a32de99e838e4aaaa6d2ec8d8b03f92b7c7837ba7ff7236d1c1848aa0",
+      "agents/chaos/chaos.md#T7": "c5d98934573266330ba764213d6dbcd40ba7c7c5dd52d498934264dbe55db02f",
+      "agents/chaos/chaos.md#T8": "d3d3e5ce5083667a3eef4bc17f9b9dc04061f45fa52c71cb6c75d9be7808f031",
+      "agents/code-review/code-review.md#T1": "617ee72133225668e87d3125f69e14d75a7db6ad0945c14e9bbc14ed0fe63b3b",
+      "agents/code-review/code-review.md#T10": "8e4402af69d0adaa813fbfd618d088943abed629411760252ad94d0148b9f6ca",
+      "agents/code-review/code-review.md#T11": "e543f550af9a1cc96c7b98912d52dec5a2bc659eac88fd26540499581a002f69",
+      "agents/code-review/code-review.md#T2": "43b88281a937c781333f8dc98134f3d485116ae63bb339dd0a58a81193f9fd1b",
+      "agents/code-review/code-review.md#T3": "de994592b77b09a8ba004dbe1885087754904cac63568a7d472a368c3357b86d",
+      "agents/code-review/code-review.md#T4": "7d678b17c3e5b3b6460536982b9dddced8a42916783a7b157885a38d9488e27d",
+      "agents/code-review/code-review.md#T5": "76510b0cfd045057539295e5da590c3f5ab1c0c33c409c01c2585e95ea239bac",
+      "agents/code-review/code-review.md#T6": "b52a910ea226ccaeb5637c7e79ed0f2559b6dfd1335fc21f4f3695fbb89b2a22",
+      "agents/code-review/code-review.md#T7": "477b15f078f583e8de170111bc0c4054fd465749bfa13df80c83452d9c6e32fd",
+      "agents/code-review/code-review.md#T8": "00e17b64cce49c867f743a8aca2f77180867a8569f581ca90239f67cefe4d998",
+      "agents/code-review/code-review.md#T9": "d2edb2dc591091323c70335a9f5e3bb0cedac3feb7bf1e3ce112c6f81d18dd30",
+      "agents/credential-review/credential-review.md#T1": "fd2e46468fb5004f295accd215dd56524e5f65bb4f6b66150b7877a4af648d0c",
+      "agents/credential-review/credential-review.md#T2": "9255440c7ccb6f87e9506b2bdfa2cea8af4e63718be2944a894480c00f46f923",
+      "agents/credential-review/credential-review.md#T3": "a772674fe67fdcdd4f9a3282225f996436c4d190c187addc7f4a7bdf5debd333",
+      "agents/credential-review/credential-review.md#T4": "c0707364dafb6b689f63e94e16acabbd145b76b6fa25c2f506ebb6efa5e97c7a",
+      "agents/credential-review/credential-review.md#T5": "b411aea44457e740fcb899097063341d408bae3617f29b4662f7d0a1f40cf66f",
+      "agents/credential-review/credential-review.md#T6": "9fab51fa75a9beb2c4e80eb941508420675f2026bf99993852aeadcd891a3daf",
+      "agents/credential-review/credential-review.md#T7": "eb710cac92d14cb8e0aeb80ae3987b687a3c1cf30ee04a041a95669031bda89e",
+      "agents/data-egress-check/data-egress-check.md#T1": "21fe3f60b7d6a8789e776cd914e470c5b94a776f7efb11728a4b1895fbfa5802",
+      "agents/data-egress-check/data-egress-check.md#T2": "1a7065a297403206f5a5cc008a69ca0749ccd6caa2eeb08dc1951331fd52bdb0",
+      "agents/data-egress-check/data-egress-check.md#T3": "91deeda670c9431350d1e2a20349c96cef6eb3a6956e21c4c6c5359f75f8e906",
+      "agents/data-egress-check/data-egress-check.md#T4": "b134713ed88ade62f09c741a38a1d64cd121b319929e2fdef84cb78e1a09a659",
+      "agents/directory-review/directory-review.md#T1": "5c4e96518f00d5f516cfdb3492c0f6881b836273430efaf4eb57f2932c96a5a6",
+      "agents/directory-review/directory-review.md#T2": "597c2f04be254a161fb0ae41f29d193ed81b3e6e78bc623708ed0f16ef40f5e5",
+      "agents/directory-review/directory-review.md#T3": "37295b5dc28efc463c081b5fe751a32e6dd2be6670524083ca4f361fbb7fa258",
+      "agents/directory-review/directory-review.md#T4": "389e0ac654403bcf1354410109e3748f56e7623296e4cea9a52dd86696d132ad",
+      "agents/directory-review/directory-review.md#T5": "7f2659d0c006b5b280f1a943e0446b21a4066e58b7209ef0fefa667d703fe6ca",
+      "agents/directory-review/directory-review.md#T6": "eea20445f8ade5a0fe39158da0003835640b26dd87ce7ae819ca573a0fa60bb7",
+      "agents/directory-review/directory-review.md#T7": "3ffec38908087b082826d5f533ef3000be1e82e02c28c9d2b33f43094e9a17e0",
+      "agents/directory-review/directory-review.md#T8": "dd57a399b216560cbf8797af82bcc9d3ab4896f360526ba8ef586f9011e6b57b",
+      "agents/directory-review/directory-review.md#T9": "bd130852c8d6791901f64067ad84747128a0aff2ef7c0f9ff3ababa2e311dad0",
+      "agents/evidence-hygiene/evidence-hygiene.md#T1": "c20c5c515cc1f383d8d92a173e6b463551752a886b8b85964d6592334929a658",
+      "agents/evidence-hygiene/evidence-hygiene.md#T2": "b1b56cf3b0ef9e0cc2bac9b015a71ce87e53729e68763ac59b4a167d082b4ad6",
+      "agents/evidence-hygiene/evidence-hygiene.md#T3": "2ce9c7967541959cc5ea6fecafbf805626c564ef243b6c0ee51d5f0dcc63d79d",
+      "agents/evidence-hygiene/evidence-hygiene.md#T4": "b19d6b5e04ffbf09d7a0281b612c0990eafc61524a6f8babbddf25fa3bc4a7af",
+      "agents/evidence-hygiene/evidence-hygiene.md#T5": "fafb243485e7b96e379ffc723fac26a4bb55fb082debbdabd707d16299ad6cd2",
+      "agents/foothold-durability/foothold-durability.md#T1": "8fff031b0e14c5e23b26e6a0944677ed153f93c96e5c4abd3034f1e605e4b023",
+      "agents/foothold-durability/foothold-durability.md#T2": "298dd84703c533b76b56dd036a26d668125201246d89c236a96e7fa6d546e4b7",
+      "agents/foothold-durability/foothold-durability.md#T3": "665028765ae094f24de1cfc2c755e0c27606c78056e74e8c04b618057b9ba6b0",
+      "agents/foothold-durability/foothold-durability.md#T4": "35c987650d1cc507c82e536d9942b019d81efabf74b1d70d249c08d6bf1f974e",
+      "agents/foothold-durability/foothold-durability.md#T5": "2624e6cc7cdedc9be410968733a01cfd007cd78be3fae831b08e50abbf260b3f",
+      "agents/foothold-durability/foothold-durability.md#T6": "7a9ebc9c3967b7b955495c17d1a30230aa656fbcdb016bc220fb7a4cb01d468a",
+      "agents/forge/forge.md#B1": "a5eb82bddea0ec1f670709d515312ed9ba1c431a7d9a4a180d20f2bf78df54be",
+      "agents/forge/forge.md#B10": "93d45d8fe40c57f7e3e5c1690a39d1af8fde66c3d22dfdf0321083a6160e4d01",
+      "agents/forge/forge.md#B11": "da3870104b6edc6cf005a3ed6eab1072a4398c3a5f81baeda23f8e420fddda61",
+      "agents/forge/forge.md#B12": "edd84db3d046dbdba1c501b773c5fcda67efdcd50e7a222e03464bb9e0378100",
+      "agents/forge/forge.md#B13": "b7e48eb12919164edb19a6f5f7135306726863f6096ccc0800e4ea0cfe981dc3",
+      "agents/forge/forge.md#B14": "f6ff31ee2189592ed1d908f85bbf7f3e3a46695b94f4a7885adebdc6c848e178",
+      "agents/forge/forge.md#B15": "91767b1ef692f001689ecf5ef3bdff1327d745264263f720559125f66edcf115",
+      "agents/forge/forge.md#B2": "c6ca303b405a9e7bb69abe804f97edebab583e5a6457d05768b34a0f60541600",
+      "agents/forge/forge.md#B3": "645eefcf2edb58a97729bc236611fbe5faa9624dbbbed33dfa6ffa6b6ee49b26",
+      "agents/forge/forge.md#B4": "a012954db2e779962202fc7f281f9e2d99425e8f2d423326306ea1b1637c2f63",
+      "agents/forge/forge.md#B5": "2793c95763e9312651124a3a7e339748b1762b33e1d6c31203c027ce8fa92db9",
+      "agents/forge/forge.md#B6": "d434db5f7a817334f6a3806d8a93f8e151a5896adc7c2948e5a04686d3a2cd0f",
+      "agents/forge/forge.md#B7": "de19a90f4f7e54750b81d2157bed5871d6f8a6f01c18c0bd7cbe0ecd413ba7cb",
+      "agents/forge/forge.md#B8": "707e71bb30aa60afcc1ed40fc8ddbe119c38dce78d5f02380b0572edac61fcfb",
+      "agents/forge/forge.md#B9": "de005100d3c4ed1e66d769b3d5602649713b157dbd0dd938f250093ad30f79c3",
+      "agents/host-inventory/host-inventory.md#T1": "b3efee38e3f8c4417f254f44d41e8756738bb679f27519089cc0aa7b2fd649d1",
+      "agents/host-inventory/host-inventory.md#T10": "dc56d35fe06d9e9eeb73d56374b282c8c4f63ea1c99f0e9ca6b260f3f63a2149",
+      "agents/host-inventory/host-inventory.md#T2": "9c88adf0e3746e25edb17b53a5101bac12d9c1ec03acfa58c43e2ebcc7819681",
+      "agents/host-inventory/host-inventory.md#T3": "0e051dffc3dcaab08471cdf3e547b0a7a9f8e070d741d2a54a2e91eaeb98cb2e",
+      "agents/host-inventory/host-inventory.md#T4": "3e7595285f35454da4eada0a43bbd68bc11effdd78718688458cd25a66bee9a4",
+      "agents/host-inventory/host-inventory.md#T5": "eb52f70c9b9a36c6595c0e2e5c951cf318c0126708192ec3d033907dc57878d9",
+      "agents/host-inventory/host-inventory.md#T6": "06d73f312758857713d0dfe657f827200052323d4dc2ed4a7873748dc537f906",
+      "agents/host-inventory/host-inventory.md#T7": "df38cd859ad76a256f1325b15ed9e4d61d2acf96fbb88004601bb0af44b186b6",
+      "agents/host-inventory/host-inventory.md#T8": "8c4ac5c8623c8536a54fee114aee1a085577589625a6d110d9c3a3aa529f4f79",
+      "agents/host-inventory/host-inventory.md#T9": "f8358e30a1809deb3acf47ba54772443ddb819ce1b2312c941943a4ce8688d67",
+      "agents/host-to-host-access/host-to-host-access.md#T1": "8c75ccf096a92aaaa8f93d0424a682ed731466cca9bd406fb665571fda6c4232",
+      "agents/host-to-host-access/host-to-host-access.md#T2": "b8ddc2731da06b3a62d5a00f74a0158550ac6f44886159ee5945e3ba566550da",
+      "agents/host-to-host-access/host-to-host-access.md#T3": "c8f8815c89e03d865be6ccba456230442f779b7910db239000ed5231ddcdf337",
+      "agents/host-to-host-access/host-to-host-access.md#T4": "12f476b63259352944a601549962e764ac03a07adb52e2d826d54a98f2da5f9b",
+      "agents/host-to-host-access/host-to-host-access.md#T5": "a3fcfa05d8b50f108ebcc72dd241818e1774eb7fcb3bfcaef30b4690502cb2e8",
+      "agents/host-to-host-access/host-to-host-access.md#T6": "ac71ca793a11d4c7fa6147398489577a9cf04c4dbcb99768cb941ab9565cfcd8",
+      "agents/host-to-host-access/host-to-host-access.md#T7": "a28325c6996cfa3d8d4ae2c8d3d42f6ac1888fca3353bd95c56ceefc1c2e19dc",
+      "agents/privilege-review/windows.md#T1": "2413fb93593bef7366fdeb856aac1b03a1aa979b5ba1ca84b209a97c77dd40db",
+      "agents/privilege-review/windows.md#T2": "62c832b2aa4ddf27673a3e3867e69b357d31479a30f44b020431a3eb67091272",
+      "agents/privilege-review/windows.md#T3": "6fec83d9e6b31932b21a6554eb9974f561f6eab213d5b7db1bdc64e6c5aa5700",
+      "agents/privilege-review/windows.md#T4": "2ed41aa4f52431f1b12cb865f0d58276d00a90699f86bf4f4d407ae6155cf1d6",
+      "agents/privilege-review/windows.md#T5": "a26ff93254dc7cd03370c3ac4f8e91603e51cc75d0cf09b243dbce4f354a47cf",
+      "agents/privilege-review/windows.md#T6": "37891713143874aea3d4d4a4c5dc2269b6cf358382d346a51f653eda9665fff9",
+      "agents/privilege-review/windows.md#T7": "ad412189da7a110ac4fcba1403316cfe4c73e3efd743c1c21e62fe3f3a310e4d",
+      "agents/privilege-review/windows.md#T8": "7c0251c7a411d79a391b89066d8bbc054c0383f77b09fa2f16164aececd45927",
+      "agents/privilege-review/windows.md#T9": "69dde9e296cee952678aa8b2fdb40d8894f681bdbce35888505295f0ae1f66b8",
+      "agents/telemetry-awareness/lolbins.md#T1": "a374ce11a28c75b1c46c3304261476771d2846c4bae0b132bc123f6ee6b25955",
+      "agents/telemetry-awareness/lolbins.md#T2": "c5bdbdaf60652b1ae714a8def352b7a7e928b0242db1aa1f4761ca7d6b95f175",
+      "agents/telemetry-awareness/lolbins.md#T3": "d9eb3d46906dbf5344b0a2323c3d259c137a6d26fd59a33c1ad4fab021dac760",
+      "agents/telemetry-awareness/lolbins.md#T4": "30a2bb058fcc3e73f855b70742905156a9abc53a909b97f6cedac9a87555d389",
+      "agents/telemetry-awareness/lolbins.md#T5": "a44e13c0a6007b89c0abb8ae6ed401667270b0d81ff7a1b075f153600eb92b5c",
+      "agents/telemetry-awareness/lolbins.md#T6": "d229bb46939faf385a3634afc2b12ed737ee91766e425f3905bbcdafa1c1ccc5",
+      "agents/telemetry-awareness/lolbins.md#T7": "cd0759d23542f78414f9e6376136b8bd4e90f7e8ca7e86b565cbf6fcef04f19a",
+      "agents/telemetry-awareness/lolbins.md#T8": "d54089f5b15c0ea3a46a94d7985ed9b82d8b0802ca124f35457e8b31d80260de",
+      "agents/telemetry-awareness/lolbins.md#T9": "f655f1917c2761cf4e40371bc64dd6429ad4561a90c2637695cd0ab78f5dc042",
+      "agents/telemetry-awareness/telemetry-awareness.md#T1": "14c5036793b49bab611369530ece295ff490be38d43be35ed1c655b8344b7351",
+      "agents/telemetry-awareness/telemetry-awareness.md#T2": "72efba5e9c71edd13fd4342479df0ba8fd4188059b2f5c3b7797e08f92471ac4",
+      "agents/telemetry-awareness/telemetry-awareness.md#T3": "9bdeac365cf287a64e181256ad9c9cc068e92c8757a57765eb193689333fc1c1",
+      "agents/telemetry-awareness/telemetry-awareness.md#T4": "437df7b357fbfdd25ea5414ebddddee061fdb6a88eb105ad70b6fae24e2222ee",
+      "agents/web-inventory/web-inventory.md#T1": "23d110b2b044ef031b00c213b6d7612ed555447c1bacf19b9eb1b0ecf03d0dbb",
+      "agents/web-inventory/web-inventory.md#T2": "aec44314a839d4c094e375907039321ef67b992143f7518c4f697c3f723b9058",
+      "agents/web-inventory/web-inventory.md#T3": "920d5d8850ebfeff808ccffc994a3aa4f465bcf56e4abd627960abe8f355a94a",
+      "agents/web-inventory/web-inventory.md#T4": "e9a7ece9908e7121e28b8154be22d48582a5c64f27ffb14948842e85db9b6d99",
+      "agents/web-inventory/web-inventory.md#T5": "6512f09ac9636720c1bc75d93c0180db690439bace4310b89cd48714eaa6a0b1",
+      "agents/web-inventory/web-inventory.md#T6": "4429c1aca08c0f609ddfce52b3d096e24b0b5a16e42ab82b771f60036dbc42bc",
+      "agents/web-inventory/web-inventory.md#T7": "f70e8c7e45fb9710b47828de281c7d1effa5cb7309be8d5b51fda38ef6b82072",
+      "agents/web-inventory/web-inventory.md#T8": "ee2788a143de6b3835ca56a00527966851a48e610d42c7333776b48aa150644f",
+      "agents/web-testing/web-testing.md#T1": "78650c6b9e48eaea7c28e306f9f5898d1471c9d8b0c7234ce04dffb536303c63",
+      "agents/web-testing/web-testing.md#T10": "7bcce60925037620164d23de2173b70bf485d442702d6f73b2ee8af266b3a1ec",
+      "agents/web-testing/web-testing.md#T11": "ffbae1e39136f419f41021411766133d390cb85469dab1edbdd42e4f216a6a49",
+      "agents/web-testing/web-testing.md#T12": "b782dde63a47817c59a0d0771c51378c5186ce3340e6506dd13fa8a008957dd6",
+      "agents/web-testing/web-testing.md#T13": "c8af261a4c13faaa5ff2894edf45107eb655e871e8da5d374e54c66d5978615b",
+      "agents/web-testing/web-testing.md#T14": "929b8c1a5226744dc40c5f9558d511fcba7e814c0f33c2d827445871eebac8d3",
+      "agents/web-testing/web-testing.md#T15": "a445dc114b26450ca114e64b0deb0f7b0c1631f538b8bfdf6e5d3b0f8d7a9355",
+      "agents/web-testing/web-testing.md#T2": "052313e396e53f964b7ba364863658b7534ff3e70674400a124b179bdeb76c0b",
+      "agents/web-testing/web-testing.md#T3": "51a0390c4b773970fe0f69777071b83f4bf6c97ce3f13f44b78e144a6ed12186",
+      "agents/web-testing/web-testing.md#T4": "4924315ed65689114252a0d76c7651946f51a1414932cba2fc5247834c126c7d",
+      "agents/web-testing/web-testing.md#T5": "abd79de3c79693d9a2972971f0de0bfd3064aa671b66d39820209191008c2a5d",
+      "agents/web-testing/web-testing.md#T6": "165229daa36efa60bca0450750ebe614296980ab1a0e205af71ae75a7c10ede9",
+      "agents/web-testing/web-testing.md#T7": "6a3ddf22086ef38ecf8f2a96f86c12422bbe21d1833021a747101d787be89b1b",
+      "agents/web-testing/web-testing.md#T8": "d8c192596a243b1c0079bb17bee584c7f82e01f909d7b9999b628b8e49b73f70",
+      "agents/web-testing/web-testing.md#T9": "d5a1bc0a91a3506dbe40304b0120579321bab9cc42c688d090cbd9b37c0a25bd"
+    },
+    "technique_count": 127,
+    "technique_count_by_prefix": {
+      "T": 112,
+      "B": 15
+    },
+    "policy_hashes": {
+      "authorization-gate": "042e73fa20195753eeb745a945d72992471916bcdd177eba8e1c10f6d1fb316d",
+      "verification-contract": "3c6ec9dd3a51f1336aefc455fbf2808647d34ef835720faaecd2f1a3feee2efa",
+      "native-tooling-doctrine": "069522e00def2484a333d62c1d17a21ecf5156b5452ec302f3766ebee17cbebe"
+    },
+    "catalog_counts": {
+      "agents/chaos/chaos.md": 8,
+      "agents/code-review/code-review.md": 11,
+      "agents/code-review/sink-patterns.md": 0,
+      "agents/credential-review/credential-review.md": 7,
+      "agents/data-egress-check/data-egress-check.md": 4,
+      "agents/directory-review/directory-review.md": 9,
+      "agents/evidence-hygiene/evidence-hygiene.md": 5,
+      "agents/foothold-durability/foothold-durability.md": 6,
+      "agents/forge/forge.md": 15,
+      "agents/host-inventory/host-inventory.md": 10,
+      "agents/host-to-host-access/host-to-host-access.md": 7,
+      "agents/methodology/methodology.md": 0,
+      "agents/privilege-review/windows.md": 9,
+      "agents/telemetry-awareness/lolbins.md": 9,
+      "agents/telemetry-awareness/telemetry-awareness.md": 4,
+      "agents/web-inventory/web-inventory.md": 8,
+      "agents/web-testing/web-testing.md": 15
+    },
+    "routing_graph_sha256": "9665c9091efef96dd46c70bfac5eb206e5adf3100a1c0ffcde745df177642a2a",
+    "baseline_aggregate_sha256": "5f6fa7686f271d79a5db54c96baede1bd6fc5e98aaf543700420d69559046522"
+  }
+}

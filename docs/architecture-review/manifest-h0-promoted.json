@@ -1,0 +1,90 @@
+{
+  "tool": "validate_h0.mjs",
+  "runtime": "node v22.23.1",
+  "tree": ".",
+  "baseline": "docs/architecture-review/baseline/manifest.json",
+  "overall": "OK",
+  "checks": {
+    "bodies": {
+      "status": "OK",
+      "detail": "multiset: baseline=127, staging=127; faltando=0, extra=0"
+    },
+    "count": {
+      "status": "OK",
+      "detail": "T=112/112, B=15/15, total=127/127"
+    },
+    "catalogs": {
+      "status": "OK",
+      "detail": "14 categorias; 0 divergências"
+    },
+    "policies": {
+      "status": "OK",
+      "detail": "3 policies; 0 problemas"
+    },
+    "routing": {
+      "status": "OK",
+      "detail": "15 roteadas; 0 quebrados; 0 não alcançadas; agents/refs no index=0"
+    },
+    "descriptions": {
+      "status": "OK",
+      "detail": "15 skills; 0 sem Triggers"
+    },
+    "xref": {
+      "status": "OK",
+      "detail": "cross-refs informativos; corpos independem de path"
+    },
+    "brief": {
+      "status": "OK",
+      "detail": "8/8 seções; ordem=true"
+    },
+    "regression": {
+      "status": "OK",
+      "detail": "newline=true crlf=true cr=true tier0=true tier1=true blueprint=true delegados=true"
+    }
+  },
+  "regression": {
+    "finalNewline": {
+      "pass": true
+    },
+    "crlf": {
+      "pass": true
+    },
+    "cr": {
+      "pass": true
+    },
+    "kinds": {
+      "blueprint": {
+        "staging": 15,
+        "baseline": 15,
+        "pass": true
+      },
+      "tier0": {
+        "staging": 99,
+        "baseline": 99,
+        "pass": true
+      },
+      "tier1": {
+        "staging": 13,
+        "baseline": 13,
+        "pass": true
+      },
+      "delegated": {
+        "staging": 3,
+        "baseline": 3,
+        "pass": true
+      },
+      "pointerAll": {
+        "staging": 10,
+        "baseline": 10,
+        "pass": true
+      }
+    }
+  },
+  "staging_count": 127,
+  "policy_hashes": {
+    "authorization-gate": "042e73fa20195753eeb745a945d72992471916bcdd177eba8e1c10f6d1fb316d",
+    "verification-contract": "3c6ec9dd3a51f1336aefc455fbf2808647d34ef835720faaecd2f1a3feee2efa",
+    "native-tooling-doctrine": "069522e00def2484a333d62c1d17a21ecf5156b5452ec302f3766ebee17cbebe"
+  },
+  "findings": []
+}

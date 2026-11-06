@@ -1,0 +1,168 @@
+# SYNAPSE .gitignore
+# (formerly SecurityAuditor/HackBot)
+
+# Config (contains tester identity / proxy creds)
+.config
+
+# Local env config (contains secrets: Caido PAT, base URLs). Keep the example template tracked.
+.env
+.env.*
+*.env
+.env.local
+!.env.example
+
+# Engagement data (contains target-specific findings, evidence, secrets)
+engagements/
+*.engagement/
+
+# Evidence files
+evidence/
+
+# Scratch / temp
+intake/scratch.md
+*.tmp
+*.bak
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Forged tools (should not be committed)
+*.exe
+*.dll
+forge-*.go
+forge-*.py
+forge-*.js
+
+# Installed dependencies (reproducible via `npm install` from package-lock.json)
+node_modules/
+
+# Local credentials / state (defensive — keep out of Git even if empty)
+.aws/
+.agents/
+
+# Session / engagement runtime state (beyond engagements/)
+**/.sa-state/
+**/.hackbot/
+**/.whitebox-access.log
+
+# Packaging residue / archives
+__MACOSX/
+._*
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# Secrets and local credentials
+.env*
+!.env.example
+.netrc
+.npmrc
+.pypirc
+.git-credentials
+credentials.json
+.credentials.json
+.mcp.json
+.claude/settings.local.json
+secrets.json
+secrets.y*ml
+token.json
+tokens.json
+.ssh/
+.gnupg/
+.kube/
+.azure/
+.gcloud/
+.docker/
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.kdbx
+*.ovpn
+
+# Local runtime state and captured cookies
+.pi/
+.gemini/
+cookies.txt
+
+# Codex is not part of this distribution; local Codex state stays out
+.codex/
+
+# Captured traffic, dumps and data stores
+*.har
+*.pcap
+*.pcapng
+*.cap
+*.saz
+*.caido
+*.dmp
+*.dump
+*.sql
+*.sqlite
+*.sqlite3
+*.db
+
+# Engagement artifacts created at the repo root by mistake
+.engagement.json
+/Whitebox/
+/scope.md
+/session.md
+/toDoList.md
+/cc[A-Z]*.md
+/[1-9]-[A-Z]*/
+
+# Intake payloads (the directory itself is kept)
+intake/files/*
+!intake/files/.gitkeep
+
+# Logs and caches
+*.log
+logs/
+__pycache__/
+*.py[cod]
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+.nyc_output/
+coverage/
+test-results/
+playwright-report/
+
+# Temp, backups and archives
+tmp/
+temp/
+*.old
+*.orig
+*.rej
+*.backup
+*.7z
+*.rar
+*.gz
+*.bz2
+*.xz
+
+# OS residue
+$RECYCLE.BIN/
+.Trash-*/
+.directory
+.nfs*

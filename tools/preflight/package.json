@@ -1,0 +1,16 @@
+{
+  "name": "synapse-preflight",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "H2d-F1 — Windows Bootstrap, HackBot Doctor and Environment Preflight (deterministic, offline, no LLM, no offensive ops, zero deps).",
+  "bin": {
+    "sa-preflight": "cli.mjs"
+  },
+  "scripts": {
+    "preflight": "node cli.mjs preflight",
+    "doctor": "node cli.mjs doctor",
+    "test": "node test-preflight.mjs",
+    "test:env": "node test-env-loader.mjs"
+  }
+}

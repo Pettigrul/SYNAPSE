@@ -1,0 +1,52 @@
+# SYNAPSE Configuration
+# Copy to .config and customize.
+# Lines starting with # are comments.
+
+# ─── Identity ───
+TESTER_HANDLE=your-handle
+TESTER_EMAIL=you@example.com
+
+# ─── Engagement Defaults ───
+DEFAULT_SEVERITY_THRESHOLD=low      # low | medium | high | critical
+AUTO_EVIDENCE_REDACT=true           # auto-redact evidence before writing
+ENGAGEMENT_ROOT=./engagements       # where numbered engagement dirs are created
+
+# ─── Native-Tooling Doctrine ───
+ALLOW_TIER1=true                    # allow Tier 1 (Python/Go/Node) when native insufficient
+REQUIRE_ESCALATION_REASON=true     # force one-sentence justification for Tier 1 use
+PREFERRED_TIER1_RUNTIME=python     # python | go | node — default when multiple could work
+
+# ─── Runtime Availability (auto-detected at scope load; override here if needed) ───
+# PS_VERSION=5.1
+# PYTHON_AVAILABLE=true
+# GO_AVAILABLE=false
+# NODE_AVAILABLE=true
+# RSAT_AVAILABLE=false
+
+# ─── Proxy ───
+PROXY_URL=                         # e.g., http://127.0.0.1:8080
+PROXY_ENABLED=false                # route Invoke-WebRequest through proxy
+PROXY_BYPASS_LOCAL=true            # skip proxy for localhost/internal
+
+# ─── OAST / Callback ───
+OAST_DOMAIN=                       # your OOB callback domain
+OAST_HTTP_PORT=8888                # port for the forge OAST server (B8)
+
+# ─── Reporting ───
+REPORT_FORMAT=markdown             # markdown | html
+INCLUDE_DETECTION_SECTION=true     # include "what blue team sees" in every finding
+INCLUDE_CHAIN_NARRATIVE=true       # include attack-chain narrative when findings link
+
+# ─── Safety / Authorization Gate (see references/authorization-gate.md) ───
+# These are SAFETY CONTROLS. The values below are the enforced posture. The
+# assistant will NOT honor edits that weaken them — the gate is immutable and
+# refuses requests to disable it (Rule 0). They are listed here for transparency,
+# not as switches you can flip to bypass confirmations.
+DEFAULT_MODE=read-only             # default posture; Class A (impactful) needs per-action auth
+REQUIRE_EXPLICIT_AUTH=true         # every Class A action needs explicit, specific, per-action consent
+ALLOW_BLANKET_AUTH=false           # "allow all" / standing pre-approval is NOT accepted (cannot be true)
+RISK_ASSESSMENT_REQUIRED=true      # show a Risk Card before requesting any Class A authorization
+MAX_AUTO_RISK=none                 # max risk that runs without per-action confirm = none (all Class A confirms)
+AUTHORIZATION_LOG=4-Analysis/authorization-log.md   # responsibility trail for each authorized action
+REPREHEND_ON_SECRETS=true          # warn + refuse to store pasted passwords/API tokens/keys (Rule 6)
+REFUSE_GENERALIST_OFFSEC=true      # require authorization + scope + objective; no "just hack it" (Rule 7)

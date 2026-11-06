@@ -1,0 +1,27 @@
+{
+  "name": "synapse-web-runtime",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SecurityAuditor Web Runtime backends (F1 HTTP inspection, F2 visual browser via playwright-core driving a pre-installed browser).",
+  "scripts": {
+    "test": "node test.mjs && node test-browser.mjs",
+    "test:e2e": "node test-e2e.mjs",
+    "test:sessions": "node test-sessions.mjs",
+    "test:authz": "node test-authz.mjs",
+    "test:concurrent": "node test-concurrent.mjs",
+    "test:race": "node test-race.mjs",
+    "test:bridge": "node test-bridge.mjs",
+    "test:pi": "node test-pi-adapter.mjs",
+    "test:investigation": "node test-investigation.mjs",
+    "test:caido": "node test-caido.mjs",
+    "test:caido-monitor": "node test-caido-monitor.mjs",
+    "test:caido-copilot": "node test-caido-copilot.mjs",
+    "test:caido-active": "node test-caido-active.mjs",
+    "test:caido-investigation": "node test-caido-investigation.mjs",
+    "test:caido-workflow": "node test-caido-workflow.mjs"
+  },
+  "dependencies": {
+    "playwright-core": "1.64.1"
+  }
+}

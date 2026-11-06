@@ -1,0 +1,11 @@
+{
+  "name": "synapse-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pentest Engagement Workspace (H2c-F1): manifest, modality, Caido association, code-enforced Whitebox segregation. Zero dependencies.",
+  "scripts": {
+    "test": "node test-engagement.mjs",
+    "test:multi": "node test-multi-engagement.mjs"
+  }
+}
