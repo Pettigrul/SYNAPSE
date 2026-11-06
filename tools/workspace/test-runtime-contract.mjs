@@ -48,9 +48,9 @@ const SCOPE_OK = "# Scope\n\n## In Scope\n- 127.0.0.1\n";
 
 // ---- session derivation ----
 
-await t("explicit SA_SESSION_ID wins over the activation marker", () => {
+await t("explicit SA_SESSION_ID takes over from the derived session, still bound to the project", () => {
   const p = project(["pi"]);
-  assert.equal(resolveSessionId({ env: { SA_SESSION_ID: "mine" }, cwd: p }), "mine");
+  assert.equal(resolveSessionId({ env: { SA_SESSION_ID: "mine" }, cwd: p }), `mine--${resolveSessionId({ env: {}, cwd: p })}`, "the explicit id, bound to this project");
 });
 
 await t("activated project: stable prj-<12 hex> session, same from a subdirectory", () => {
@@ -118,19 +118,19 @@ await t("two projects on the SAME engagement keep independent modes", () => {
   assert.match(modeIn(b, ["status"]).out, /mode: copilot/);
 });
 
-await t("explicit SA_SESSION_ID: both projects share that one pointer", () => {
+await t("explicit SA_SESSION_ID: its own pointer, bound to the project, never shared with another one", () => {
   const env = { SA_SESSION_ID: "shared-op" };
   assert.equal(inP(P1, ["use", "--name", "beta"], env).code, 0);
-  assert.match(inP(P2, ["active"], env).out, /active: beta/);
+  assert.match(inP(P1, ["active"], env).out, /active: beta/);
+  assert.match(inP(P2, ["active"], env).out, /no active engagement/);
   assert.match(inP(P1, ["active"]).out, /active: alpha/, "the derived session is untouched");
 });
 
-await t("non-activated cwd keeps the legacy default pointer, separate from projects", () => {
+await t("non-activated cwd: no shared default pointer, the selection refuses", () => {
   const plain = fresh("plain");
-  assert.match(inP(plain, ["active"]).out, /no active engagement/);
-  assert.equal(inP(plain, ["use", "--name", "alpha"]).code, 0);
-  assert.ok(fs.existsSync(path.join(SHARED, STATE_ROOT_DIR, "active.json")));
-  assert.match(inP(plain, ["active"]).out, /active: alpha/);
+  assert.equal(inP(plain, ["active"]).code, 2);
+  assert.equal(inP(plain, ["use", "--name", "alpha"]).code, 2);
+  assert.ok(!fs.existsSync(path.join(SHARED, STATE_ROOT_DIR, "active.json")));
 });
 
 // ---- bootstrap runtime selection and idempotency ----

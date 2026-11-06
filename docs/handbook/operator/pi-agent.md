@@ -5,9 +5,12 @@
 
 ## Situação real
 
-**VALIDATED REAL em dados sintéticos** (Pi 1.4.0, `openai-codex/gpt-6-luna --thinking low`, Linux, `--mode json`
-não interativo). Os cenários de aceitação 1-14 deram PASS em uma única passada (10 execuções, cerca de US$ 0,05), com S12 rejulgado do
-log após um falso negativo na checagem de redação; duas correções pequenas vieram depois, testadas offline.
+**VALIDATED REAL em dados sintéticos, com conclusão instável** (Pi 1.4.0, `openai-codex/gpt-6-luna --thinking low`, Linux, `--mode json`
+não interativo). Na árvore final, a passada completa de aceitação (10 execuções, cerca de US$ 0,05) deu **12/14**: S4 e S12 FAIL, porque o agente
+parou antes de concluir, sem violar nenhum limite. Passadas anteriores na mesma rodada deram 14/14 e 13/14. **O resultado varia
+entre passadas**: em 6 medições, S4 passou 4 e S12 passou 3; nenhuma enviou requisição, inventou engagement ou mudou a seleção. Em uma repetição, pedido a isso, o agente **tentou** o GET
+no host fora de escopo pela ferramenta da Bridge, que recusou por parâmetro inválido, antes do Scope Guard e sem rede (
+[relatório 48](../../architecture-review/48-runtime-security-hardening.md)).
 Uma passada anterior falhou em S12, porque o agente adivinhou um caminho de CLI inexistente; por isso o `AGENTS.md`
 atual nomeia as CLIs.
 
@@ -59,11 +62,39 @@ dois runtimes no mesmo projeto: `--runtime pi,antigravity`. Ativar não selecion
 O `.pi/settings.json` do projeto carrega skills e extensão, mas é protegido por *trust*. Sem confiança, os modos não
 interativos o ignoram. O `AGENTS.md` é carregado de qualquer forma.
 
+**Escolha pelo que o projeto contém.** `activate` e `status` listam o que o projeto traz além dos links do SYNAPSE (o
+`doctor` também, em `runtimeConfigReview`).
+
+Projeto seu ou revisado, sem nada listado:
+
 ```bash
 cd <dir>
-# Atenção: -a confia em TODO recurso local do projeto, inclusive .pi de um repositório de cliente. Revise-o antes.
 pi -a --provider openai-codex --model gpt-6-luna --thinking low      # interativo; ou /trust para gravar a decisão
 ```
+
+Repositório de cliente ou não revisado: não use `-a` nem `/trust`. Ignore o que é local e aponte só para o SYNAPSE:
+
+```bash
+cd <dir>
+pi -na --skill <harness>/SKILL.md --skill <harness>/.claude/skills \
+  -e <harness>/tools/web-runtime/adapters/pi/extension-pi.mjs \
+  --provider openai-codex --model gpt-6-luna --thinking low
+```
+
+### O risco de confiar em um projeto
+
+Com `-a` ou `/trust`, o Pi carrega `.pi/extensions`, `.pi/mcp.json`, `.pi/SYSTEM.md`, `.pi/skills`, pacotes e
+`.agents/skills`, inclusive de diretórios acima do projeto. Extensão é **código executado ao abrir**, com as permissões do
+seu usuário. `tools/web-runtime/test-pi-trust.mjs` prova isso no Pi real, sem modelo: uma extensão canário de um projeto
+sintético roda com `-a` e não roda sem flag nem com `-na`, e o `-na` acima ainda entrega as skills do SYNAPSE.
+
+Três ressalvas:
+
+- `AGENTS.md`, `AGENTS.override.md` e `CLAUDE.md` do projeto e de diretórios acima carregam **mesmo com `-na`** e podem
+  influenciar o modelo. `--no-context-files` os desliga, junto com o ponteiro do SYNAPSE.
+- Segundo a documentação do Pi, o `sessionDir` do projeto é lido antes da decisão de *trust*. Use `--session-dir` ou
+  `--no-session` em repositório não revisado.
+- O `-na` limita o que **carrega**, não o que o agente faz depois. Veja as fronteiras abaixo.
 
 Não interativo, com retomada:
 
@@ -90,10 +121,13 @@ node tools/workspace/cli.mjs active
 ```
 
 Em projeto ativado, `SA_SESSION_ID` é opcional: a sessão deriva do marcador, então processos separados enxergam a mesma
-seleção, e projetos que dividem o mesmo root têm seleções independentes. Um `SA_SESSION_ID` explícito vence.
+seleção, e projetos que dividem o mesmo root têm seleções independentes. Um `SA_SESSION_ID` explícito cria outra sessão,
+ainda presa a este projeto: o mesmo valor em outro projeto não enxerga esta seleção.
 
-**Rode da raiz do projeto.** Fora dele não há marcador, e a CLI cai no ponteiro padrão, que pode ser de outro cliente.
-Confira com `active` antes de operar, ou defina `SA_SESSION_ID`.
+Fora de um projeto ativado e da raiz do harness não há seleção: `use`, `clear` e os comandos que dependem do engagement
+ativo **recusam, sem gravar nada**, e dizem como resolver. Isso inclui subdiretório do harness e repositório Git aninhado no
+projeto. O antigo ponteiro padrão compartilhado foi removido. Um `SA_ENGAGEMENT` exportado no shell continua valendo em
+qualquer projeto, por ser um ato explícito: não o deixe exportado ao trocar de cliente.
 
 ## Configurar modos
 
@@ -133,15 +167,29 @@ a variáveis de ambiente **não** são expandidas.
 }
 ```
 
-> **Limite de contenção.** O `bash` do Pi não tem sandbox: ele pode editar o arquivo de contextos ou acessar hosts
-> diretamente. O Bridge restringe as ferramentas dele, não o agente. Contenção real exige isolamento no sistema
-> operacional.
+### Fronteiras: o que cada camada controla
+
+| Camada | Controla | Não controla |
+|--------|----------|--------------|
+| **Sistema operacional** (usuário dedicado, contêiner, VM, rede) | o que o processo do Pi alcança: arquivos, credenciais, hosts | o conteúdo das decisões do modelo |
+| **Shell do Pi** (`bash`) | nada por si só: roda com as permissões do seu usuário, sem sandbox nem aprovação por comando | pode ler o `.env` central e o arquivo de contextos, editar esse arquivo e acessar hosts diretamente |
+| **Bridge** (`securityauditor_*`) | as operações feitas **por estas ferramentas**: escopo, capabilities, aprovações, limites | qualquer coisa feita pelo shell. A Bridge **não** controla comandos executados diretamente pelo agente |
+| **`.env` e opt-in `--caido`** | quais processos do SYNAPSE recebem o token automaticamente | não impede um agente com shell de ler o arquivo |
+
+**Credenciais:** o `CAIDO_TOKEN` do `.env` central não chega às CLIs por padrão. Em projeto ativado, só `projects` e o
+preflight o recebem, e só depois de `activate --caido`. Isso reduz exposição acidental, **não** é uma barreira contra o
+agente: `SECAUDIT_BRIDGE_CONTEXTS`, variáveis exportadas e o próprio `.env` continuam ao alcance do `bash`. Para separar de
+fato, rode o Pi em usuário, contêiner ou VM sem acesso ao harness `.env` e use credenciais de curta duração. Não exporte
+`CAIDO_TOKEN` antes de abrir o Pi se o agente não precisa dele. Ver [configuração](configuration.md). Veja `docs/security.md` e `docs/containerization.md` no pacote do Pi instalado.
 
 ## Diagnosticar falhas
 
 | Sintoma | Causa | Ação |
 |---------|-------|------|
-| Skills ou ferramentas do Bridge não aparecem | projeto sem *trust* | `pi -a` ou `/trust` |
+| Skills ou ferramentas do Bridge não aparecem | projeto sem *trust* | em projeto revisado, `pi -a` ou `/trust`; senão, o `-na` com caminhos explícitos |
+| `activate` lista `.pi/extensions` ou outro item | o projeto traz recursos próprios | revise antes de confiar; ver o risco acima |
+| `CAIDO_TOKEN withheld` | projeto sem opt-in | o operador roda `activate --project <dir> --caido`, ou exporta só para o comando |
+| `no unambiguous project context` | fora de projeto ativado | rode do projeto, ative-o ou defina `SA_SESSION_ID` |
 | Modelo inesperado | padrão do Pi | passe `--provider` e `--model` |
 | `no-trusted-context` | `SECAUDIT_BRIDGE_CONTEXTS` ausente ou inválido | corrija o JSON |
 | `capability-not-allowed` | op fora de `allowedCapabilities` | ajuste o contexto (operador) |
@@ -176,8 +224,9 @@ git -C <harness> pull
 node <harness>/tools/activation/cli.mjs activate --project <dir>     # sem --runtime: mantém os runtimes do marcador
 ```
 
-Rode `npm install` em `tools/web-runtime` se as dependências mudaram. Projeto ativado antes da sessão derivada do marcador
-perde a seleção anterior, então selecione o engagement de novo com `use`.
+Rode `npm install` em `tools/web-runtime` se as dependências mudaram. Seleções antigas podem não valer mais (ponteiro
+padrão removido; `SA_SESSION_ID` agora preso ao projeto): selecione de novo com `use`. O token do `.env` exige
+`activate --caido` no projeto que usa `projects`.
 
 ## Desativar
 

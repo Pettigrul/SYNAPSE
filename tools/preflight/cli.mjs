@@ -7,7 +7,7 @@
 
 import { collectEnv, runPreflight, PROFILES } from "./preflight.mjs";
 import { runDoctor } from "./doctor.mjs";
-import { loadProjectEnv } from "./env-loader.mjs";
+import { loadScopedEnv } from "./env-loader.mjs";
 
 function parse(argv) {
   const a = { cmd: argv[0] || "preflight", profile: "core-lab", json: false };
@@ -23,7 +23,8 @@ function main() {
   if (process.argv.slice(2).some((x) => x === "--help" || x === "-h")) { console.log(`usage: node cli.mjs preflight|doctor [--profile <p>] [--json]`); return 0; }
   // Load local persistent config (<repo>/.env) BEFORE snapshotting the environment. Env vars already
   // set take precedence; only variable NAMES are ever shown — never values.
-  const envLoad = process.env.SA_SKIP_ENV_FILE ? { loaded: false, applied: [], skipped: [], keys: [] } : loadProjectEnv();
+  // CAIDO_TOKEN is withheld unless this context may use it (env-loader.mjs); the report then shows it as absent.
+  const envLoad = loadScopedEnv({ need: ["caido"] });
   const env = collectEnv();
 
   if (a.cmd === "doctor") {
@@ -46,6 +47,7 @@ function main() {
     else {
       console.log(`${r.summary}\n`);
       for (const c of r.checks) console.log(`  [${c.status.toUpperCase().padEnd(8)}] ${c.required ? "req " : "opt "} ${c.id.padEnd(18)} ${c.detail}`);
+      if (envLoad.withheld.length) console.log(`\n.env withheld here: ${envLoad.withheld.join(", ")}${envLoad.caidoDenied ? ` (${envLoad.caidoDenied})` : ""}`);
       console.log(`\nverdict: ${r.verdict}  (no LLM, no offensive operations)`);
     }
     return r.verdict === "READY" ? 0 : r.verdict === "DEGRADED" ? 1 : 2;
@@ -56,11 +58,12 @@ function main() {
 }
 
 // Names-only, sanitized views of the .env load (never emits values).
-function envLoadSummary(l) { return { loaded: l.loaded, applied: l.applied, keptFromEnvironment: l.skipped }; }
+function envLoadSummary(l) { return { loaded: l.loaded, applied: l.applied, keptFromEnvironment: l.skipped, withheld: l.withheld }; }
 function envFileLine(l) {
   if (!l.loaded) return "not present (using process environment only)";
   const parts = [`loaded ${l.applied.length} var(s)` + (l.applied.length ? ` [${l.applied.join(", ")}]` : "")];
   if (l.skipped.length) parts.push(`kept from environment: ${l.skipped.join(", ")}`);
+  if (l.withheld.length) parts.push(`withheld here: ${l.withheld.join(", ")}`);
   return parts.join("; ");
 }
 

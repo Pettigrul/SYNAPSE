@@ -6,6 +6,10 @@
 //   - PRECEDÊNCIA DO AMBIENTE: variáveis já definidas em `process.env` NUNCA são sobrescritas (env vence).
 //   - RAIZ REAL DO PROJETO: o arquivo é localizado a partir da posição deste módulo, independente do cwd.
 //   - SANITIZAÇÃO: as funções NUNCA imprimem/retornam VALORES — apenas NOMES de variáveis.
+//   - MENOR PRIVILÉGIO: o .env é central e alcança qualquer projeto. Só a config comum conhecida é aplicada; todo o resto
+//     (CAIDO_TOKEN, seletores ligados a um projeto, chaves desconhecidas) fica RETIDO, salvo liberação explícita. Lista de
+//     permissão, não de bloqueio: um segredo com nome inesperado falha fechado.
+//     Isso reduz exposição ambiente; NÃO é fronteira contra um agente com shell, que pode ler o arquivo.
 //   - Não é gerenciador de segredos, não é nova arquitetura de config, e a presença do arquivo NÃO
 //     autoriza operação alguma (autorização segue no Execution Context / policies — intocadas).
 // Reutilizável por qualquer entry point: `import { loadProjectEnv } from ".../env-loader.mjs"`.
@@ -14,8 +18,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseEnv } from "node:util";
+import { resolveProjectContext } from "../workspace/engagement.mjs";
+import { statusActivation } from "../activation/activate.mjs";
 
 export const ENV_FILE = ".env";
+const COMMON_KEYS = new Set(["CAIDO_BASE_URL", "SA_ENGAGEMENT_ROOT", "SA_BROWSER_CHANNEL", "SA_STRIDE_ENABLED", "PI_AGENT_HOME", "PI_CODING_AGENT_DIR", "ANTIGRAVITY_HOME"]);
+// Valem só para o harness central: apontam para um cliente, ou são integrações opcionais dele.
+export const PROJECT_BOUND_KEYS = Object.freeze(["SA_ENGAGEMENT", "SA_SESSION_ID", "CAIDO_PROJECT_ID", "SA_EVIDENCE_DIR", "SECAUDIT_BRIDGE_CONTEXTS", "SECAUDIT_ENGAGEMENT_DIR", "GITHUB_MCP", "CONFLUENCE_MCP"]);
+export const isRestrictedKey = (k) => !COMMON_KEYS.has(k);
 
 // Raiz real do projeto (este módulo vive em tools/preflight/ → sobe dois níveis). Independe do cwd.
 export function projectRoot() {
@@ -43,12 +53,46 @@ export function applyEnv(parsed, target = process.env, { override = false } = {}
 
 // Entry helper: localiza <root>/.env (independente do cwd) e carrega com precedência do ambiente.
 // Retorna um resumo SANITIZADO (apenas NOMES; nunca valores). Ausência do arquivo é normal (loaded:false).
-export function loadProjectEnv({ root = projectRoot(), file = ENV_FILE, target = process.env, override = false } = {}) {
+// Chaves restritas fora de `allow` não são aplicadas e aparecem em `withheld`; já definidas no ambiente, seguem em `skipped`.
+export function loadProjectEnv({ root = projectRoot(), file = ENV_FILE, target = process.env, override = false, allow = [] } = {}) {
   const full = path.join(root, file);
   let content = null;
   try { content = fs.readFileSync(full, "utf8"); } catch { /* arquivo ausente é aceitável */ }
-  if (content === null) return { loaded: false, path: full, applied: [], skipped: [], keys: [] };
+  if (content === null) return { loaded: false, path: full, applied: [], skipped: [], keys: [], withheld: [] };
   const parsed = parseEnvContent(content);
-  const { applied, skipped } = applyEnv(parsed, target, { override });
-  return { loaded: true, path: full, applied, skipped, keys: Object.keys(parsed) }; // keys = NOMES apenas
+  const withheld = [], usable = {};
+  for (const [k, v] of Object.entries(parsed)) {
+    if (!isRestrictedKey(k) || allow.includes(k)) usable[k] = v;
+    else if (target[k] && !override) usable[k] = v; // o ambiente vence: applyEnv registra em skipped, sem alterar
+    else withheld.push(k);
+  }
+  const { applied, skipped } = applyEnv(usable, target, { override });
+  return { loaded: true, path: full, applied, skipped, keys: Object.keys(parsed), withheld }; // keys = NOMES apenas
+}
+
+// O que este contexto pode receber do .env central. `need: ["caido"]` é declarado só pelo comando que usa o token:
+// raiz do harness sempre; projeto ativado somente com opt-in para ESTE harness (caminho absoluto no marcador, todos os links
+// íntegros); fora disso, nunca. O marcador fica no projeto: quem conhece o caminho do harness pode forjá-lo. Reduz acidente, não é barreira.
+function optedIn(projectDir) {
+  const s = statusActivation({ projectDir });
+  if (!s.caido || !s.healthy) return false;
+  if (!path.isAbsolute(s.hackbotHome)) return false;
+  try { return fs.realpathSync(s.hackbotHome) === fs.realpathSync(projectRoot()); } catch { return false; }
+}
+export function envAccess({ need = [], env = process.env, cwd = process.cwd() } = {}) {
+  const ctx = resolveProjectContext({ env, cwd });
+  const allow = ctx.kind === "harness" ? [...PROJECT_BOUND_KEYS] : [];
+  let caidoDenied = null;
+  if (need.includes("caido")) {
+    if (ctx.kind === "harness" || (ctx.kind === "project" && optedIn(ctx.dir))) allow.push("CAIDO_TOKEN");
+    else caidoDenied = ctx.kind === "project" ? `project ${ctx.dir} has no valid opt-in for this harness, or its links aren't intact (check tools/activation/cli.mjs status); the operator can run: tools/activation/cli.mjs activate --project ${ctx.dir} --caido` : "this directory is neither the harness root nor an opted-in activated project";
+  }
+  return { allow, caidoDenied };
+}
+
+// Entrada das CLIs: respeita SA_SKIP_ENV_FILE e aplica a política de envAccess.
+export function loadScopedEnv({ need = [], root = projectRoot(), target = process.env, env = process.env, cwd = process.cwd() } = {}) {
+  const { allow, caidoDenied } = envAccess({ need, env, cwd });
+  if (env.SA_SKIP_ENV_FILE) return { loaded: false, applied: [], skipped: [], keys: [], withheld: [], caidoDenied };
+  return { ...loadProjectEnv({ root, target, allow }), caidoDenied };
 }

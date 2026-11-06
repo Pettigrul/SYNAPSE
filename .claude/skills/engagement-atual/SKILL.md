@@ -14,7 +14,8 @@ Interface **fina** e **read-only** sobre o CLI de workspace. Execute e mostre a 
 node tools/workspace/cli.mjs active
 ```
 
-- Resolução: `SA_ENGAGEMENT` (override) > ponteiro de sessão (`SA_SESSION_ID`) > nenhum. Sem troca silenciosa.
+- Resolução: `SA_ENGAGEMENT` (override) > ponteiro da sessão do projeto > nenhum. Sem troca silenciosa e sem ponteiro
+  compartilhado: fora de projeto ativado o CLI sai com erro e explica como resolver.
 - Se **não houver** seleção, o CLI diz explicitamente — informe o operador que operações dependentes de
   engagement estão bloqueadas até `/usar-engagement`. Consultas read-only e `/verificar-ambiente` seguem OK.
 - Por ser read-only, funciona sem engagement ativo e **não** cria arquivos nem autoriza operações.

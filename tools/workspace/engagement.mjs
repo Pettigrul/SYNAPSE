@@ -332,14 +332,19 @@ export function associateCaidoProject(engagement, { projectId, projectName = nul
 // the .env lets the operator/agent switch engagements at runtime. Precedence when
 // resolving the active engagement: explicit SA_ENGAGEMENT override > session pointer
 // > NONE. It NEVER picks a nearest/first/last engagement — selection is always exact
-// and explicit. The pointer only names the engagement; every scope/project/confinement/
+// and explicit, and a pointer exists only for an unambiguous session (no shared default). The pointer only names the engagement; every scope/project/confinement/
 // authorization control stays exactly where it was (manifest + Bridge).
 // ---------------------------------------------------------------------------
 export const STATE_ROOT_DIR = ".sa-state"; // under SA_ENGAGEMENT_ROOT; holds the active pointer (no secrets)
 
-// SA_SESSION_ID wins. Otherwise an ACTIVATED project gets a stable session derived from its marker path, so
-// separate non-interactive processes agree on one pointer and projects sharing a root stay isolated. Same
-// pointer files, no new state. No marker => null => the existing default pointer (unchanged behavior).
+// A session is always bound to where it runs, so a selection can never cross projects or clients:
+//  - activated project: stable prj-<hash> from its marker path; an explicit SA_SESSION_ID becomes <id>--prj-<hash>;
+//  - central harness (no marker, cwd exactly its root): its own prj-<hash>. A subdirectory doesn't count: a process in a
+//    project's linked dir (cwd=<project>/tools) is physically inside the harness and must not get the harness's selection;
+//  - anywhere else: only an explicit SA_SESSION_ID, bound to the enclosing repository or harness if any (<id>--repo-<hash>);
+//    otherwise null => NO selection and writes refuse. There is no
+//    shared default pointer (a legacy active.json is ignored, never read or deleted).
+const HARNESS_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 export function findActivatedProject(cwd = process.cwd(), env = process.env) {
   // The cwd is physical: inside a linked dir (cd tools) only the shell's PWD still shows the project.
   // The physical path comes second: a link from elsewhere into the project must still find its marker.
@@ -347,22 +352,55 @@ export function findActivatedProject(cwd = process.cwd(), env = process.env) {
   for (const start of starts) {
     for (let d = path.resolve(start); ; d = path.dirname(d)) {
       if (fs.existsSync(path.join(d, ".hackbot-activation.json"))) return d;
-      if (path.dirname(d) === d) break;
+      if (fs.existsSync(path.join(d, ".git")) || path.dirname(d) === d) break; // a nested repository is someone else's: never inherit its parent's selection
     }
   }
   return null;
 }
+const shortHash = (s) => createHash("sha256").update(s).digest("hex").slice(0, 12);
+const projectKey = (d) => `prj-${shortHash(realpathLenient(d))}`;
+function markerValid(d) {
+  try { const m = JSON.parse(fs.readFileSync(path.join(d, ".hackbot-activation.json"), "utf8")); return !!m && typeof m.hackbotHome === "string" && Array.isArray(m.links) && m.links.every((l) => typeof l === "string"); }
+  catch { return false; }
+}
+// kind: "project" | "invalid-marker" (nearest marker unreadable: never walk past it to a parent project) | "harness" | "none".
+export function resolveProjectContext({ env = process.env, cwd = process.cwd() } = {}) {
+  const found = findActivatedProject(cwd, env);
+  if (found) return { kind: markerValid(found) ? "project" : "invalid-marker", dir: found };
+  const H = realpathLenient(HARNESS_ROOT);
+  return realpathLenient(cwd) === H ? { kind: "harness", dir: H } : { kind: "none", dir: null };
+}
+function enclosingRepo(cwd) {
+  for (let d = realpathLenient(cwd); ; d = path.dirname(d)) {
+    if (fs.existsSync(path.join(d, ".git")) || d === realpathLenient(HARNESS_ROOT)) return d; // a harness subdir counts too: a project's linked dir lands there
+    if (path.dirname(d) === d) return null;
+  }
+}
 export function resolveSessionId({ env = process.env, cwd = process.cwd() } = {}) {
-  if (env.SA_SESSION_ID) return env.SA_SESSION_ID;
-  const d = findActivatedProject(cwd, env);
-  return d ? `prj-${createHash("sha256").update(realpathLenient(d)).digest("hex").slice(0, 12)}` : null;
+  const ctx = resolveProjectContext({ env, cwd });
+  if (env.SA_SESSION_ID) {
+    const raw = String(env.SA_SESSION_ID), safe = sanitizeName(raw).slice(0, 64); // bounded: it names a file
+    // Distinct ids must stay distinct after sanitizing, and an id can't take the form of a derived session (prj-<hash>).
+    const id = safe === raw && !/(^|--)(prj|repo)-/.test(raw) ? safe : `${safe}-${shortHash(raw)}`;
+    if (ctx.kind === "project" || ctx.kind === "invalid-marker") return `${id}--${projectKey(ctx.dir)}`;
+    const repo = ctx.kind === "none" ? enclosingRepo(cwd) : null;
+    return repo ? `${id}--repo-${shortHash(repo)}` : id;
+  }
+  return ctx.kind === "project" || ctx.kind === "harness" ? projectKey(ctx.dir) : null;
+}
+// Actionable refusal for a null session. Names no engagement: without context we cannot tell whose they are.
+export function noContextHelp({ env = process.env, cwd = process.cwd() } = {}) {
+  const ctx = resolveProjectContext({ env, cwd });
+  const why = ctx.kind === "invalid-marker" ? `the activation marker in ${ctx.dir} is unreadable (re-run activate there)` : `${cwd} is not an activated project`;
+  return `no unambiguous project context: ${why}. Run from the activated project's root or the harness root, activate this one (tools/activation/cli.mjs activate --project <dir> --runtime <r>), or set SA_SESSION_ID for automation; commands that read an engagement also take --name <n>`;
 }
 
 function activePointerPath(root, sessionId) {
-  const fname = sessionId ? `active-${sanitizeName(String(sessionId))}.json` : "active.json";
-  return path.join(root, STATE_ROOT_DIR, fname);
+  if (!sessionId) throw new WorkspaceError("no-session-context", "no session: a selection needs an activated project, the central harness or SA_SESSION_ID");
+  return path.join(root, STATE_ROOT_DIR, `active-${sanitizeName(String(sessionId))}.json`);
 }
 function readActivePointer(root, sessionId) {
+  if (!sessionId) return null;
   try { return JSON.parse(fs.readFileSync(activePointerPath(root, sessionId), "utf8")); } catch { return null; }
 }
 
@@ -390,9 +428,9 @@ export function listEngagements(root) {
 export function setActiveEngagement({ root, name, sessionId = null, operator = null } = {}) {
   if (!root) throw new WorkspaceError("bad-params", "root (SA_ENGAGEMENT_ROOT) required");
   if (!name) throw new WorkspaceError("bad-params", "name required to select an engagement");
+  const p = activePointerPath(root, sessionId); // refuses before touching anything when there is no session
   const sel = selectEngagement({ root, name }); // validates EXACT existence
   const prev = readActivePointer(root, sessionId);
-  const p = activePointerPath(root, sessionId);
   fs.mkdirSync(path.dirname(p), { recursive: true });
   const ptr = { name: sel.name, dir: sel.dir, sessionId: sessionId || null, setAt: new Date().toISOString(), setBy: operator || null };
   const tmp = `${p}.tmp-${process.pid}`; fs.writeFileSync(tmp, JSON.stringify(ptr, null, 2) + "\n"); fs.renameSync(tmp, p);
@@ -401,13 +439,14 @@ export function setActiveEngagement({ root, name, sessionId = null, operator = n
 }
 
 export function clearActiveEngagement({ root, sessionId = null } = {}) {
-  try { fs.rmSync(activePointerPath(root, sessionId), { force: true }); } catch { /* ignore */ }
+  const p = activePointerPath(root, sessionId);
+  try { fs.rmSync(p, { force: true }); } catch { /* ignore */ }
   return { cleared: true };
 }
 
 // Resolve the active engagement NAME: SA_ENGAGEMENT override > session pointer > none.
 // Returns { name, source: "env"|"session"|null, dir }. A missing/stale target yields NO
-// selection (never a fallback to another engagement).
+// selection (never a fallback to another engagement); no session adds noContext: true.
 export function getActiveEngagement({ root = null, env = process.env, sessionId = null } = {}) {
   const override = env && env.SA_ENGAGEMENT ? String(env.SA_ENGAGEMENT) : null;
   if (override) {
@@ -415,6 +454,7 @@ export function getActiveEngagement({ root = null, env = process.env, sessionId 
     catch { return { name: override, source: "env", dir: null, unresolved: true }; }
   }
   if (!root) return { name: null, source: null, dir: null };
+  if (!sessionId) return { name: null, source: null, dir: null, noContext: true };
   const ptr = readActivePointer(root, sessionId);
   if (ptr && ptr.name) {
     try { const sel = selectEngagement({ root, name: ptr.name }); return { name: sel.name, source: "session", dir: sel.dir }; }

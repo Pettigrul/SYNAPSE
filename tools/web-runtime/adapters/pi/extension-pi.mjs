@@ -29,9 +29,9 @@ export default async function securityAuditorPiEntry(pi) {
 }
 
 /**
- * Operator-controlled Execution Context source. SECAUDIT_BRIDGE_CONTEXTS points at a JSON file:
+ * Execution Context source. SECAUDIT_BRIDGE_CONTEXTS, fixed when Pi starts, points at a JSON file:
  *   { "<investigationId>": { "scope": {...}, "allowedCapabilities": [...], "limits": {...}, "approvals": [...] } }
- * The dispatcher/operator writes it; the agent cannot. Absent file => null => tools refuse.
+ * The operator writes it. The Bridge tools can't change it, but the agent's shell can unless the OS keeps it out of reach. Absent file => null => tools refuse.
  */
 function makeFileContextSource() {
   return async function resolveContext(investigationId) {

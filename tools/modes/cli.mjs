@@ -10,10 +10,10 @@
 // no operation and grants no capability.
 
 import { getMode, setMode, clearMode, modeEnvelope, MODES, DEFAULT_MODE, BRIDGE_CAPABILITIES, ModeError } from "./mode.mjs";
-import { getActiveEngagement, selectEngagement, resolveSessionId, WorkspaceError } from "../workspace/engagement.mjs";
-import { loadProjectEnv } from "../preflight/env-loader.mjs";
+import { getActiveEngagement, selectEngagement, resolveSessionId, noContextHelp, WorkspaceError } from "../workspace/engagement.mjs";
+import { loadScopedEnv } from "../preflight/env-loader.mjs";
 
-if (!process.env.SA_SKIP_ENV_FILE) loadProjectEnv();
+loadScopedEnv();
 
 const rootOf = () => process.env.SA_ENGAGEMENT_ROOT || null;
 const sessionOf = () => resolveSessionId();
@@ -22,15 +22,16 @@ function die(msg, code = 2) { console.error(`error: ${msg}`); process.exit(code)
 function resolveActive() {
   const root = rootOf();
   const active = getActiveEngagement({ root, sessionId: sessionOf() });
-  if (!active.name) return { root, engagement: null };
+  if (!active.name) return { root, engagement: null, noContext: !!active.noContext };
   const sel = selectEngagement({ root, name: active.name, envProjectId: process.env.CAIDO_PROJECT_ID || null });
   return { root, engagement: { dir: sel.dir, name: sel.name }, sel, source: active.source };
 }
 
 function printStatus() {
-  const { engagement, sel, source } = resolveActive();
+  const { engagement, sel, source, noContext } = resolveActive();
   if (!engagement) {
     console.log(`mode: ${DEFAULT_MODE} (default) — NO active engagement`);
+    if (noContext) console.log(`  ${noContextHelp()}`);
     console.log(`  mode belongs to an engagement session; select one: node tools/workspace/cli.mjs use --name <n>`);
     console.log(`  (read-only status works without a selection; mode cannot be SET without one)`);
     return 0;
@@ -38,7 +39,7 @@ function printStatus() {
   const m = getMode({ engagement, sessionId: sessionOf() });
   console.log(`mode: ${m.mode}  (${m.source}${m.stale ? "; previous engagement's mode ignored" : ""})`);
   console.log(`  engagement    ${engagement.name}  (via ${source})`);
-  console.log(`  session       ${sessionOf() || "(default pointer)"}`);
+  console.log(`  session       ${sessionOf() || "(none: SA_ENGAGEMENT override)"}`);
   console.log(`  caido project ${sel.caidoProjectId ? `${sel.caidoProjectId} (${sel.caidoProjectSource})` : "NONE — associate one"}`);
   console.log(`  scope.md      ${sel.scopePresent ? (sel.scopeValid ? "present & valid" : "present but INVALID") : "ABSENT"}`);
   console.log(`  evidence dir  ${sel.evidenceDir}`);
@@ -62,7 +63,8 @@ function printStatus() {
 }
 
 function setActive(mode) {
-  const { engagement } = resolveActive();
+  const { engagement, noContext } = resolveActive();
+  if (noContext) die(`cannot set mode '${mode}': ${noContextHelp()}`);
   if (!engagement) die(`cannot set mode '${mode}': no active engagement (mode belongs to an engagement session) — run: node tools/workspace/cli.mjs use --name <n>`);
   const r = setMode({ engagement, sessionId: sessionOf(), mode, operator: process.env.USER || null });
   console.log(`mode set: ${r.mode}${r.switched ? ` (was ${r.previous})` : ""}  [engagement ${r.engagementId}, session ${sessionOf() || "default"}]`);

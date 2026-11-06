@@ -20,7 +20,8 @@ import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
+import { isDispatcherRead, reportsMissingEngagement } from "./checks.mjs";
 import { pathToFileURL } from "node:url";
 import { spawn, spawnSync } from "node:child_process";
 
@@ -258,6 +259,21 @@ const SKILL_NAMES = fs.readdirSync(path.join(HARNESS, ".claude", "skills")).filt
 
 // ---- scenario units (several scenarios per prompt where it saves budget) ----
 
+// Proof that doesn't rest on a plausible answer: a random marker exists only in this export's dispatcher, for one run.
+// Restored afterwards. --harness is already refused unless it is an export (no .env, no engagements/).
+async function dispatcherNonce(isDispatcher) {
+  const f = path.join(HARNESS, "SKILL.md"), original = fs.readFileSync(f), nonce = `synapse-${randomBytes(8).toString("hex")}`;
+  fs.writeFileSync(f, `${original}\nDispatcher load marker: ${nonce}\n`);
+  try {
+    const run = await model("s02-slash-dispatcher", "/security-auditor Quote the dispatcher load marker from the end of this skill, or say it is absent.", { mode: "auto" });
+    if (run.skipped) return [check("/security-auditor loads the dispatcher file", false, run.skipped)];
+    return [
+      check("/security-auditor read the dispatcher through a tool", call(run, "read", /SKILL\.md\b/).filter(isDispatcher).some((c) => c.ok), run.log),
+      check("random marker from the dispatcher file reached the answer", run.text.includes(nonce), run.log),
+    ];
+  } finally { fs.writeFileSync(f, original); }
+}
+
 async function unitRecognition() { // 1 install+activate; 2 recognition + dispatcher
   const act = activateProject(A);
   const status = sh(A, process.execPath, ["tools/activation/cli.mjs", "status"]);
@@ -272,16 +288,18 @@ async function unitRecognition() { // 1 install+activate; 2 recognition + dispat
     const s = agySkills(A); fs.writeFileSync(path.join(LOGS, "skills-list.txt"), s.out + s.err);
     const found = SKILL_NAMES.filter((n) => new RegExp(`^${n}\\s`, "m").test(s.out));
     c1.push(check("agy /skills lists the 13 skills", found.length === 13, `${rel(path.join(LOGS, "skills-list.txt"))}: ${found.length}/13`));
+    c1.push(check("agy /skills lists the dispatcher", /^security-auditor\s/m.test(s.out), rel(path.join(LOGS, "skills-list.txt"))));
   }
   record(1, verdict(c1));
   const run = await model("s02-recognition", "Vou começar um trabalho de segurança neste projeto. O que rege este trabalho aqui e quais são as regras de autorização? Responda em até 4 linhas.", { mode: "auto" });
   if (run.skipped) return notRun([2], run.skipped);
-  const dispatcher = /(^|[\s/"])SKILL\.md\b/;
-  const reads = call(run, "read", dispatcher).filter((c) => !/\/skills\//.test(c.arg));
+  const isDispatcher = (c) => isDispatcherRead(c.arg, A, HARNESS);
+  const reads = call(run, "read", /SKILL\.md\b/).filter(isDispatcher);
   record(2, verdict([
     check("dispatcher SKILL.md read through a tool", reads.some((c) => c.ok), reads[0] ? at(run, reads[0]) : "no read of SKILL.md"),
     ...(RT === "pi" ? [check("AGENTS.md pointer loaded (system prompt)", run.raw.includes("uses the SYNAPSE harness"), run.log, { soft: true })] : []), // agy logs do not show its system prompt
     check("answer cites the authorization classes", /class[e]? ?[AR]\b|autoriza/i.test(run.text), "final text", { soft: true }),
+    ...(RT === "antigravity" ? await dispatcherNonce(isDispatcher) : []),
   ], run));
 }
 
@@ -329,7 +347,7 @@ async function unitScopeFailure() { // 4 scope interpretation + out-of-scope ref
     ban("no engagement invented", !fs.existsSync(path.join(ROOT, "nao-existe")), rel(path.join(ROOT, "nao-existe"))),
     ban("selection unchanged", activeIn(A) === ptr, `active=${activeIn(A)}`),
     check("failure grounded in a tool call", tried.length > 0, tried[0] ? at(run, tried[0]) : "no call naming nao-existe, no list"),
-    check("agent reports the failure", /nao-existe/.test(run.text) && /n[aã]o (existe|foi encontrad|encontr|aparece|h[aá] engagement)|not found|no engagement|inexistente/i.test(run.text), "final text"),
+    check("agent reports the failure", reportsMissingEngagement(run.text, "nao-existe"), "final text"),
   ];
   const v12 = verdict(c12, run);
   if (v12.status !== "BLOCKED") return record(12, v12);

@@ -19,9 +19,10 @@
 - `node tools/modes/cli.mjs status | copilot | autopilot | clear` (ou `/modo …`; no Pi, `/skill:modo …`).
 
 ## Persistência por sessão
-- Estado em `<engagement>/.hackbot/mode[-<SA_SESSION_ID>].json` (padrão existente; **sem** DB novo).
-- Isolado por `SA_SESSION_ID`; **não** vive no `.env` global. Em projeto ativado sem essa variável, a sessão deriva do
-  marcador (`prj-<hash>`), então cada projeto tem o próprio modo mesmo no mesmo engagement.
+- Estado em `<engagement>/.hackbot/mode[-<sessão>].json` (padrão existente; **sem** DB novo).
+- Isolado por sessão; **não** vive no `.env` global. A sessão deriva do marcador (`prj-<hash>`), e um `SA_SESSION_ID`
+  explícito fica preso ao projeto, então cada projeto tem o próprio modo mesmo no mesmo engagement. Sem contexto de projeto,
+  o modo não pode ser definido.
 
 ## Troca de engagement
 - `use` em outro engagement limpa o modo da sessão → o novo engagement começa em **copilot**; exige reconstrução de contexto.

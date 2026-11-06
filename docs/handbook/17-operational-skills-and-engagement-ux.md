@@ -25,7 +25,7 @@ FORA do repositório**:
 SA_ENGAGEMENT_ROOT=/home/op/engagements      # externo ao repo (recomendado)
 └── acme/     .engagement.json (caido.projectId) · scope.md · .hackbot/ · evidence/ · 1-Reports/ …
 └── globex/   …
-.sa-state/    active[-<SA_SESSION_ID>].json   # ponteiro de seleção por sessão
+.sa-state/    active-<sessão>.json   # ponteiro de seleção por sessão
 ```
 
 - **Ambos os layouts são suportados** quando corretamente configurados: `SA_ENGAGEMENT_ROOT` externo

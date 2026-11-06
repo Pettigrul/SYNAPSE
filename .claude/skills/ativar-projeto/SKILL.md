@@ -23,6 +23,9 @@ node tools/activation/cli.mjs activate --project <dir> [--runtime claude-code|pi
   → `/verificar-ambiente` → `/iniciar-pentest`.
 - Conflitos com conteúdo pré-existente do operador: o CLI recusa (use `--force` para fazer backup, restaurado
   no deactivate). Repasse erros literalmente. Para desativar, use `/desativar-projeto`.
-- **Por runtime:** `--runtime pi` linka `AGENTS.md` e `.pi/settings.json` (rode `pi -a` ou `/trust`; skills como
-  `/skill:<nome>`); `--runtime antigravity` linka `AGENTS.md` e `.agents/skills`. Nada é instalado globalmente.
+- **Por runtime:** `--runtime pi` linka `AGENTS.md` e `.pi/settings.json` (skills como `/skill:<nome>`);
+  `--runtime antigravity` linka `AGENTS.md` e `.agents/skills`. Nada é instalado globalmente.
+- **Repasse ao operador** a lista `project-supplied runtime config`: é o que o projeto traz por conta própria e pode rodar
+  ao confiar nele (`pi -a`, `/trust`). Não decida por ele e não confie por ele.
+- **`--caido`** libera o `CAIDO_TOKEN` central para este projeto. É decisão do operador: não o use por conta própria.
   Ver handbook cap. 18 §18.6 (matriz por runtime).

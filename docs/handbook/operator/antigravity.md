@@ -10,15 +10,26 @@ interação humana, em dados sintéticos:
 
 | Cenário | Resultado | O que significa |
 |---------|-----------|-----------------|
-| 1 — ativação e descoberta | **PASS** | 13/13 skills listadas por `/skills`; links saudáveis |
-| 2 — dispatcher | **FAIL** | reconfirmado no `AGENTS.md` final: o agente lê o `AGENTS.md`, cita o SYNAPSE e aponta o `SKILL.md`, mas responde sem abrir o dispatcher e sem citar as classes de autorização |
+| 1 — ativação e descoberta | **PASS** | 13/13 skills e `security-auditor` listados por `/skills`; links saudáveis |
+| 2 — dispatcher | **PASS** | com o dispatcher descobrível, o agente abre o `SKILL.md` no prompt natural, e `/security-auditor` devolve um marcador aleatório existente só no arquivo. Evidência: chamada `read_file` no log, por caminho resolvido |
 | 3-11 — fluxos | **BLOCKED** | sem interação, nunca passaram da negação de permissão |
 | 12 — falha controlada | **PASS** | cobre só o caminho de falha de leitura |
 | 13 — isolamento | **PARTIAL** | verificado apenas pela CLI; o shell do agente foi negado |
 
-Portanto: o carregamento do `AGENTS.md` está verificado; o **seguimento do dispatcher, não**. Não presuma que o agente
-aplica as regras do `SKILL.md` só porque o `AGENTS.md` foi lido. A expansão de skill (`/engagement-atual`) e a leitura de
-arquivos funcionaram.
+**Abrir o dispatcher agora está verificado; obedecer a ele, não.** O S2 mede a leitura do arquivo, com poucas execuções e
+um modelo. Como os cenários 3-11 não passam da negação, nenhum comportamento guiado pelo dispatcher foi observado. A
+expansão de skill (`/engagement-atual`) e a leitura de arquivos funcionaram.
+
+### Como o dispatcher é carregado
+
+O `agy` descobre `AGENTS.md` e cada `.agents/skills/<nome>/SKILL.md`, e o modelo decide ler uma skill pela descrição. A
+falha antiga tinha causa concreta: `.agents/skills` apontava para `.claude/skills`, que tem as 13 skills, mas **não** o
+dispatcher, que fica na raiz. O agente só via o ponteiro.
+
+Agora `.agents/skills` é um diretório de links relativos, e `security-auditor/SKILL.md` é um link para o `SKILL.md` da raiz:
+um único dispatcher, sem cópia. Para exigir o carregamento em vez de depender da decisão do modelo, comece o prompt com
+`/security-auditor`. Para conferir em uma execução, procure no `--output-format stream-json` o evento `read_file` com esse
+caminho; uma resposta plausível não é prova.
 
 **NOT RUN:** `agy` interativo com um humano aprovando, outros modelos, alvos reais, Caido, Windows.
 
@@ -53,6 +64,10 @@ node <harness>/tools/activation/cli.mjs status   --project <dir>
 Cria links para o harness, incluindo `AGENTS.md` e `.agents/skills`, e o marcador `.hackbot-activation.json`. Uma ativação
 só para `claude-code` não expõe nenhuma skill do SYNAPSE ao `agy`. Ativar não seleciona engagement nem autoriza alvo.
 
+`activate` e `status` listam o que o projeto traz além dos links, como `.agents/hooks.json` e `.agents/plugins.json`. Revise
+antes de abrir um repositório não confiável: hooks e plugins do workspace são código. O `CAIDO_TOKEN` do `.env` central fica
+retido, salvo `activate --caido`.
+
 ## Abrir e executar
 
 ```bash
@@ -74,8 +89,8 @@ informa que `--mode auto` não está disponível para esta conta e continua no m
 **Uma execução negada ainda sai com código 0 e `status: SUCCESS`, com resposta vazia.** Quem automatiza precisa examinar
 `denied_actions` no resultado JSON.
 
-Ninguém no projeto adicionou essa regra. A decisão é do operador, e este guia não recomenda nenhuma das opções. **Se a
-conta for gerenciada, verifique primeiro a política da sua organização.**
+Ninguém no projeto adicionou essa regra, e o SYNAPSE não cria regras nem usa flag de bypass. A decisão é do operador, e este
+guia não recomenda nenhuma das opções. **Se a conta for gerenciada, verifique primeiro a política da sua organização.**
 
 | Opção | Como | A favor | Contra |
 |-------|------|---------|--------|
@@ -90,12 +105,12 @@ Antes de escolher, considere:
   específico e confirme na documentação do runtime o formato exato.
 - A mensagem do runtime também cita `--dangerously-skip-permissions`, que aprova todas as ferramentas. Não é uma opção
   estreita e não foi usada nesta validação.
-- Mesmo sem o bloqueio, o cenário 2 continua aberto: revise se o agente de fato abriu o `SKILL.md`.
+- Mesmo com o `SKILL.md` aberto, as regras dele não viram controle: revise o que o agente faz.
 
 ## Usar skills
 
 ```bash
-agy -p /skills                                # lista sem turno de modelo; as 13 do SYNAPSE ao lado das do próprio agy
+agy -p /skills                                # lista sem turno de modelo; o dispatcher e as 13 do SYNAPSE, ao lado das do agy
 ```
 
 As skills rodam como `/<nome>`, por exemplo `/engagement-atual`. Sem interação, o corpo da skill é expandido, mas o comando
@@ -115,7 +130,8 @@ node tools/workspace/cli.mjs active
 ```
 
 Em projeto ativado, `SA_SESSION_ID` é opcional: a sessão deriva do marcador, e projetos que dividem o mesmo root têm
-seleções independentes. Um `SA_SESSION_ID` explícito vence.
+seleções independentes. Um `SA_SESSION_ID` explícito cria outra sessão, presa a este projeto. Fora da raiz do harness e de um
+projeto ativado, `use` recusa sem gravar nada. Repositório Git aninhado no projeto não herda a seleção.
 
 ## Configurar modos
 
@@ -134,18 +150,41 @@ no modo interativo. A retomada de conversa com `--continue` funciona; a releitur
 
 ### Capability Bridge
 
-Não existe adapter de Bridge para o Antigravity. O único caminho é `tools/web-runtime/adapters/cli.mjs`, limitado a
-`capabilities.*` e `http.*` (GET/HEAD):
+**O `/investigar` e os demais fluxos no `agy` não estão protegidos pela Bridge.** Não existem ferramentas `securityauditor_*`
+neste runtime, então Scope Guard, Approval Gate, limites e proveniência não se aplicam ao que o agente faz. O `AGENTS.md` e a
+skill `/investigar` mandam o agente dizer isso; é uma instrução, não um controle.
+
+O único caminho até a Bridge é `tools/web-runtime/adapters/cli.mjs`, limitado a `capabilities.*` e `http.*` (GET/HEAD), sem
+estado entre chamadas. Ele tem duas formas:
+
+| | Arquivo de contextos | Escopo de quem chama |
+|---|---|---|
+| Como | `SECAUDIT_BRIDGE_CONTEXTS=<ctx.json>` e `investigationId` | sem essa variável, `scope` na requisição |
+| Escopo vem de | arquivo indicado na variável | do próprio chamador |
+| Vínculo | só o contexto do engagement selecionado neste projeto: campo `engagement` ou id `eng:<engagement>`. `SA_ENGAGEMENT` não vale aqui | nenhum |
+| `provenance` | `scopeSource: "context-file"`, `operatorVerified: false` | `scopeSource: "caller-supplied"`, `operatorVerified: false` |
+| Registro | `<engagement>/.hackbot/cli-adapter.jsonl`, só nomes e host | só na saída |
 
 ```bash
-node tools/web-runtime/adapters/cli.mjs '{"op":"capabilities.list"}'
-node tools/web-runtime/adapters/cli.mjs '{"op":"http.inspect","params":{"url":"http://127.0.0.1:8080/"},"scope":{"allowHosts":["127.0.0.1"],"allowPrivate":true}}'
+SECAUDIT_BRIDGE_CONTEXTS=<ctx.json> node tools/web-runtime/adapters/cli.mjs '{"op":"http.inspect","params":{"url":"http://127.0.0.1:8080/"},"investigationId":"eng:lab"}'
 ```
 
-Saída: `0` sucesso, `1` recusa (fora de escopo), `2` requisição inválida, `3` op com estado não suportada.
+Com o arquivo definido, um `scope` na requisição é recusado (`caller-scope-refused`). Saída: `0` sucesso, `1` recusa, `2`
+requisição inválida, `3` op com estado não suportada.
 
-O escopo é **fornecido por quem chama**, então essa CLI **não** é um gate do operador: quem a invoca escolhe o próprio
-escopo. As operações com estado que o `/investigar` usa (sessões, browser, concorrência, race) **não têm caminho** aqui.
+**Nenhuma das formas prova autorização, e por isso `operatorVerified` é sempre `false`.** Neste runtime quem chama a CLI é o
+próprio agente, que pode escrever um arquivo e apontar a variável para ele. O vínculo evita usar por engano o contexto de outro
+cliente; não detém um agente hostil. Só vale como gate se o operador aprovar o comando inteiro, ou se o arquivo estiver fora do
+alcance do agente por isolamento no sistema operacional. A saída também traz a URL final informada, com sua query: não coloque
+segredos nela.
+
+Isso é **TESTED OFFLINE**; pelo agente segue BLOCKED sem interação. As operações com estado que o `/investigar` usa (sessões,
+browser, Caido, concorrência, race, aprovações) continuam **sem caminho**.
+
+**Próxima etapa limitada (não implementada):** um servidor MCP sobre a mesma Bridge, com contexto do operador e vínculo ao
+projeto, reaproveitando `adapters/pi/extension.mjs`. Dois pontos a resolver antes: `agy mcp` só grava configuração do usuário,
+o que conflita com "nada global", e não sabemos se ferramentas MCP passam sem interação. Detalhes no
+[relatório 48](../../architecture-review/48-runtime-security-hardening.md).
 
 ## Diagnosticar falhas
 
@@ -154,8 +193,12 @@ escopo. As operações com estado que o `/investigar` usa (sessões, browser, co
 | Código 0, `status: SUCCESS`, resposta vazia | ferramenta negada | examine `denied_actions`; ver o bloqueio acima |
 | `--mode auto is not available for this account` | limite da conta | continua no modo padrão; ver o bloqueio acima |
 | `/skills` sem skills do SYNAPSE | projeto não ativado para este runtime | `activate --project <dir> --runtime antigravity` |
-| Resposta genérica, sem as classes de autorização | dispatcher não aberto (cenário 2) | peça a leitura do `SKILL.md` e confira na saída; não trate como garantia |
+| Resposta genérica, sem as classes de autorização | dispatcher não aberto | comece o prompt com `/security-auditor` e confira o `read_file` no log |
+| `/skills` sem `security-auditor` | ativação com harness antigo | atualize o harness; o link do projeto passa a incluí-lo |
+| `no unambiguous project context` | fora de projeto ativado | rode do projeto, ative-o ou defina `SA_SESSION_ID` |
+| `CAIDO_TOKEN withheld` | projeto sem opt-in | o operador roda `activate --project <dir> --caido`, ou exporta só para o comando |
 | `stateful-op-unsupported-in-cli` | op com estado na CLI | sem caminho neste runtime |
+| `engagement-mismatch` | contexto de outro engagement | selecione o engagement certo com `use` ou use o contexto dele |
 
 Geral: [troubleshooting](troubleshooting.md).
 
@@ -172,7 +215,14 @@ node tools/preflight/cli.mjs preflight --profile core-lab     # 0 READY / 1 DEGR
 ```
 
 Com custo: a aceitação real exige `--accept-model-cost` e um export sem `.env` nem `engagements/`, com as dependências de
-`tools/web-runtime` instaladas. Sem shell, os cenários 3-11 terminam BLOCKED, citando a recusa do runtime.
+`tools/web-runtime` instaladas. Sem shell, os cenários 3-11 terminam BLOCKED, citando a recusa do runtime. Para só o
+dispatcher, use `--scenario 1,2`.
+
+### Execução supervisionada, ainda não feita
+
+Para sair do BLOCKED sem mudar permissões: com o operador presente, rode `agy` em um projeto sintético e aprove cada comando,
+seguindo os cenários 3-11 de `tools/acceptance/runtime-acceptance.mjs`. Registre o que foi aprovado. Testes offline não
+substituem essa etapa e não homologam o runtime.
 
 ```bash
 git -C <harness> archive HEAD | tar -x -C <export>
@@ -186,8 +236,8 @@ git -C <harness> pull
 node <harness>/tools/activation/cli.mjs activate --project <dir>     # sem --runtime: mantém os runtimes do marcador
 ```
 
-Rode `npm install` em `tools/web-runtime` se as dependências mudaram. Projeto ativado antes da sessão derivada do marcador
-perde a seleção anterior, então selecione o engagement de novo com `use`.
+Rode `npm install` em `tools/web-runtime` se as dependências mudaram. Seleções antigas podem não valer mais: selecione de novo
+com `use`.
 
 ## Desativar
 

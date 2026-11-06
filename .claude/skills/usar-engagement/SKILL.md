@@ -1,7 +1,7 @@
 ---
 name: usar-engagement
 description: >
-  Seleciona o engagement ATIVO da sessão (ponteiro por SA_SESSION_ID), reconstruindo o contexto de execução.
+  Seleciona o engagement ATIVO da sessão (ponteiro por projeto), reconstruindo o contexto de execução.
   Use quando o operador pedir para selecionar/trocar o pentest ativo — "usar engagement acme", "selecionar
   pentest", "trocar de engagement", "/usar-engagement", "use engagement". Seleção é SEMPRE explícita.
 ---
@@ -20,5 +20,6 @@ node tools/workspace/cli.mjs use --name <nome>
 - **Troca de engagement:** quando o CLI reporta `switched`/`requiresCleanContext`, **avise o operador** que o
   contexto do pentest anterior foi invalidado e **ofereça uma sessão limpa** (`/clear`). Não declare que o
   histórico foi apagado — a skill não apaga a conversa; apenas o ponteiro/estado do engagement muda.
-- O ponteiro é por `SA_SESSION_ID` (sessões concorrentes isoladas). Reporte o `evidence dir` e o `caido
+- O ponteiro é por projeto ativado ou harness; `SA_SESSION_ID` cria outra sessão, presa ao projeto. Fora deles o CLI recusa
+  (`no unambiguous project context`): repasse a orientação, não contorne. Reporte o `evidence dir` e o `caido
   project` que o CLI imprime. Sem seleção válida, operações dependentes de engagement permanecem bloqueadas.

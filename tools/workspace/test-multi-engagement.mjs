@@ -180,71 +180,74 @@ await t("15 invalid context refused", () => withFetch(mkFetch(handlers("proj-A")
 }));
 
 // ---------- Part C: dynamic active-engagement selection (UX) ----------
+// Explicit session: without one there is no selection at all (test-engagement-isolation.mjs).
+const SESSION = "test-session";
+
 
 // 16 — explicit session selection via pointer (no .env)
 await t("16 explicit session selection", () => {
-  clearActiveEngagement({ root: ROOT });
-  const r = setActiveEngagement({ root: ROOT, name: "acme" });
+  clearActiveEngagement({ sessionId: SESSION, root: ROOT });
+  const r = setActiveEngagement({ sessionId: SESSION, root: ROOT, name: "acme" });
   assert.equal(r.active, true); assert.equal(r.source, "session");
-  const a = getActiveEngagement({ root: ROOT, env: {} });
+  const a = getActiveEngagement({ sessionId: SESSION, root: ROOT, env: {} });
   assert.equal(a.name, "acme"); assert.equal(a.source, "session");
 });
 
 // 17 — absence of selection → none (operations must be blocked by the caller)
 await t("17 no selection → none", () => {
-  clearActiveEngagement({ root: ROOT });
-  const a = getActiveEngagement({ root: ROOT, env: {} });
+  clearActiveEngagement({ sessionId: SESSION, root: ROOT });
+  const a = getActiveEngagement({ sessionId: SESSION, root: ROOT, env: {} });
   assert.equal(a.name, null); assert.equal(a.source, null);
   assert.throws(() => selectEngagement({ root: ROOT }), (e) => e.code === "no-active-engagement");
 });
 
 // 18 — nonexistent/ambiguous name → not-found; NEVER picks the nearest/first/last
 await t("18 no fuzzy / nearest pick", () => {
-  clearActiveEngagement({ root: ROOT });
-  assert.throws(() => setActiveEngagement({ root: ROOT, name: "acm" }), (e) => e.code === "not-found"); // prefix of 'acme'
-  assert.equal(getActiveEngagement({ root: ROOT, env: {} }).name, null); // nothing was selected
+  clearActiveEngagement({ sessionId: SESSION, root: ROOT });
+  assert.throws(() => setActiveEngagement({ sessionId: SESSION, root: ROOT, name: "acm" }), (e) => e.code === "not-found"); // prefix of 'acme'
+  assert.equal(getActiveEngagement({ sessionId: SESSION, root: ROOT, env: {} }).name, null); // nothing was selected
 });
 
 // 19 — switch invalidates the previous context (honest: requires a clean session)
 await t("19 switch invalidates previous", () => {
-  setActiveEngagement({ root: ROOT, name: "acme" });
-  const r = setActiveEngagement({ root: ROOT, name: "globex" });
+  setActiveEngagement({ sessionId: SESSION, root: ROOT, name: "acme" });
+  const r = setActiveEngagement({ sessionId: SESSION, root: ROOT, name: "globex" });
   assert.equal(r.switched, true); assert.equal(r.previous, "acme"); assert.equal(r.requiresCleanContext, true);
-  assert.equal(getActiveEngagement({ root: ROOT, env: {} }).name, "globex");
+  assert.equal(getActiveEngagement({ sessionId: SESSION, root: ROOT, env: {} }).name, "globex");
 });
 
 // 20 — SA_ENGAGEMENT override takes precedence over the session pointer
 await t("20 SA_ENGAGEMENT override precedence", () => {
-  setActiveEngagement({ root: ROOT, name: "globex" }); // pointer = globex
-  const a = getActiveEngagement({ root: ROOT, env: { SA_ENGAGEMENT: "acme" } });
+  setActiveEngagement({ sessionId: SESSION, root: ROOT, name: "globex" }); // pointer = globex
+  const a = getActiveEngagement({ sessionId: SESSION, root: ROOT, env: { SA_ENGAGEMENT: "acme" } });
   assert.equal(a.name, "acme"); assert.equal(a.source, "env");
 });
 
 // 21 — stale pointer (engagement removed) → NO fallback to another engagement
 await t("21 stale pointer → no fallback", () => {
   initEngagement({ root: ROOT, name: "ephemeral", scope: SCOPE });
-  setActiveEngagement({ root: ROOT, name: "ephemeral" });
+  setActiveEngagement({ sessionId: SESSION, root: ROOT, name: "ephemeral" });
   fs.rmSync(path.join(ROOT, "ephemeral"), { recursive: true, force: true });
-  const a = getActiveEngagement({ root: ROOT, env: {} });
+  const a = getActiveEngagement({ sessionId: SESSION, root: ROOT, env: {} });
   assert.equal(a.name, null); assert.equal(a.source, null); // not acme/globex
 });
 
 // 22 — selection does NOT alter isolation: project binding + confinement unchanged
 await t("22 isolation preserved under selection", () => {
-  setActiveEngagement({ root: ROOT, name: "globex" });
+  setActiveEngagement({ sessionId: SESSION, root: ROOT, name: "globex" });
   assert.equal(selectEngagement({ root: ROOT, name: "globex" }).caidoProjectId, "proj-B"); // unchanged
   assert.throws(() => assertInsideEngagement(path.join(ROOT, "globex"), "../acme/.engagement.json"), (e) => e.code === "path-escape");
 });
 
 // 23 — unresolved SA_ENGAGEMENT override is surfaced, not silently replaced
 await t("23 unresolved override surfaced", () => {
-  const a = getActiveEngagement({ root: ROOT, env: { SA_ENGAGEMENT: "ghost" } });
+  const a = getActiveEngagement({ sessionId: SESSION, root: ROOT, env: { SA_ENGAGEMENT: "ghost" } });
   assert.equal(a.name, "ghost"); assert.equal(a.source, "env"); assert.equal(a.unresolved, true); assert.equal(a.dir, null);
 });
 
 // 24 — listing is available without any selection (discovery), excludes the state dir
 await t("24 listing without selection", () => {
-  clearActiveEngagement({ root: ROOT });
+  clearActiveEngagement({ sessionId: SESSION, root: ROOT });
   const names = listEngagements(ROOT).map((e) => e.name);
   assert.ok(names.includes("acme") && names.includes("globex"));
   assert.ok(!names.includes(".sa-state")); // pointer dir is not an engagement

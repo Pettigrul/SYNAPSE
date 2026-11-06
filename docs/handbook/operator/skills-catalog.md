@@ -25,7 +25,7 @@
 - **Executa:** cria diretórios + `.engagement.json`. **Risco:** cria arquivos no root (idempotente; não sobrescreve dados).
 
 ### `/usar-engagement`
-- **Finalidade:** selecionar o engagement **ativo** da sessão (ponteiro por `SA_SESSION_ID` ou, em projeto ativado sem ele, por projeto).
+- **Finalidade:** selecionar o engagement **ativo** da sessão (ponteiro por projeto ativado ou harness; `SA_SESSION_ID` cria outra sessão, presa ao projeto). Fora deles, recusa sem gravar.
 - **Pré-requisitos:** engagement existente (match exato).
 - **Exemplo:** `/usar-engagement acme` → `cli.mjs use --name acme`.
 - **Executa:** grava o ponteiro de sessão; numa troca, limpa o modo (volta a Copilot). **Limitação:** troca **avisa** sessão limpa (não apaga histórico do LLM). **Risco:** baixo.

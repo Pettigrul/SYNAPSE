@@ -5,6 +5,7 @@
 // the guard on tools/acceptance/runtime-acceptance.mjs. Whether a real runtime honors these files is proven by
 // that script, not here.
 
+import { isDispatcherRead, reportsMissingEngagement } from "../acceptance/checks.mjs";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -275,22 +276,70 @@ for (const [label, base] of [["central", () => H], ["activated project", () => {
   });
 }
 
-t(".agents/skills is a relative tracked link to .claude/skills: 13 skills, no copy", () => {
+t(".agents/skills: tracked relative links only, the 13 skills plus the dispatcher, no copy", () => {
   const link = path.join(H, ".agents", "skills");
-  assert.ok(isLink(link), ".agents/skills must be a symlink");
-  assert.equal(fs.readlinkSync(link), "../.claude/skills");
-  const names = skillDirs(link);
+  const names = skillDirs(link).filter((n) => n !== "security-auditor");
   assert.equal(names.length, 13, names.join(","));
-  assert.deepEqual(names, skillDirs(path.join(H, ".claude", "skills")));
+  assert.deepEqual(names, skillDirs(path.join(H, ".claude", "skills")), "a skill added to .claude/skills must be linked here too");
   for (const name of names) {
+    assert.ok(isLink(path.join(link, name)), `${name} must be a symlink`);
+    assert.equal(fs.readlinkSync(path.join(link, name)), `../../.claude/skills/${name}`);
+  }
+  for (const name of [...names, "security-auditor"]) {
     const fm = fs.readFileSync(path.join(link, name, "SKILL.md"), "utf8").match(/^---\n[\s\S]*?^name:\s*(\S+)/m);
     assert.equal(fm && fm[1], name, `frontmatter name of ${name}`);
   }
 });
 
-t("activated project: .agents/skills lists the same 13 skills", () => {
+t("dispatcher in .agents/skills is THE dispatcher: a link to SKILL.md, not a second copy", () => {
+  const d = path.join(H, ".agents", "skills", "security-auditor", "SKILL.md");
+  assert.ok(isLink(d)); assert.equal(fs.readlinkSync(d), "../../../SKILL.md");
+  assert.equal(fs.realpathSync(d), fs.realpathSync(path.join(H, "SKILL.md")));
+  assert.deepEqual(fs.readdirSync(path.dirname(d)), ["SKILL.md"]);
+  assert.ok(!fs.existsSync(path.join(H, ".claude", "skills", "security-auditor")), "Claude Code and Pi discovery stay unchanged");
+});
+
+t("activated project: .agents/skills exposes the 13 skills and the dispatcher, through the central harness", () => {
   const p = mk(); activate({ projectDir: p, home: H, runtimes: ["antigravity"] });
-  assert.equal(skillDirs(path.join(p, ".agents", "skills")).length, 13);
+  assert.equal(skillDirs(path.join(p, ".agents", "skills")).length, 14);
+  const d = path.join(p, ".agents", "skills", "security-auditor", "SKILL.md");
+  assert.equal(fs.realpathSync(d), fs.realpathSync(path.join(H, "SKILL.md")));
+  assert.equal(fs.realpathSync(path.join(p, "SKILL.md")), fs.realpathSync(d), "same file as the project's SKILL.md");
+});
+
+t("runtime config audit: lists what the project supplies, not our links, and blocks nothing", () => {
+  const p = mk();
+  fs.mkdirSync(path.join(p, ".pi", "extensions"), { recursive: true }); fs.writeFileSync(path.join(p, "AGENTS.override.md"), "x");
+  fs.mkdirSync(path.join(p, ".agents")); fs.writeFileSync(path.join(p, ".agents", "hooks.json"), "{}");
+  const r = activate({ projectDir: p, home: H, runtimes: ["pi", "antigravity"] });
+  assert.deepEqual(r.runtimeConfig.map((f) => f.path).sort(), [".agents/hooks.json", ".pi/extensions", "AGENTS.override.md"]);
+  assert.equal(r.runtimeConfig.find((f) => f.path === ".agents/hooks.json").kind, "executable");
+  const out = cli(["status", "--project", p]);
+  assert.match(out.out, /review before trusting/); assert.match(out.out, /\.pi\/extensions\s+\[executable\]/);
+  const clean = mk(); assert.deepEqual(activate({ projectDir: clean, home: H, runtimes: ["pi", "antigravity"] }).runtimeConfig, []);
+});
+
+t("runtime config audit: an ancestor's .agents/skills and context files are reported too", () => {
+  const parent = mk(); fs.mkdirSync(path.join(parent, ".agents", "skills"), { recursive: true }); fs.writeFileSync(path.join(parent, "CLAUDE.md"), "x");
+  const child = path.join(parent, "child"); fs.mkdirSync(child);
+  const found = activate({ projectDir: child, home: H, runtimes: ["pi"] }).runtimeConfig.map((f) => f.path);
+  assert.ok(found.includes(path.join(parent, ".agents", "skills"))); assert.ok(found.includes(path.join(parent, "CLAUDE.md")));
+});
+
+t("acceptance S12 check: the answer must name the engagement and say it is missing", () => {
+  for (const ok of ["Não selecionei **nao-existe**: o CLI informou que não há um engagement com esse nome.", "nao-existe não existe.", "Engagement nao-existe not found.", "não há engagement nao-existe", "Para nao-existe, o CLI retornou `not-found`.", "nao-existe não foi localizado.", "nao-existe não localizado."]) assert.ok(reportsMissingEngagement(ok, "nao-existe"), ok);
+  for (const bad of ["O engagement nao-existe foi selecionado.", "O escopo de nao-existe é 127.0.0.1.", "Não há um engagement com esse nome.", "Selecionei nao-existe; não há problema."]) assert.ok(!reportsMissingEngagement(bad, "nao-existe"), bad);
+});
+
+t("acceptance S2 check: only the dispatcher's own file counts, by resolved path", () => {
+  const p = mk(); activate({ projectDir: p, home: H, runtimes: ["antigravity"] });
+  const is = (arg) => isDispatcherRead(arg, p, H);
+  assert.ok(is("SKILL.md")); assert.ok(is(path.join(p, ".agents", "skills", "security-auditor", "SKILL.md")));
+  assert.ok(is(`50 ${path.join(p, "SKILL.md")}`), "other parameters beside the path");
+  assert.ok(!is(path.join(p, ".agents", "skills", "investigar", "SKILL.md")), "another skill");
+  fs.writeFileSync(path.join(p, "copy.md"), fs.readFileSync(path.join(H, "SKILL.md"))); fs.mkdirSync(path.join(p, "x")); fs.writeFileSync(path.join(p, "x", "SKILL.md"), fs.readFileSync(path.join(H, "SKILL.md")));
+  assert.ok(!is(path.join(p, "x", "SKILL.md")), "a copy is not the dispatcher");
+  assert.ok(!is("no-such-dir/SKILL.md")); assert.ok(!is("AGENTS.md"));
 });
 
 t("AGENTS.md is a short pointer: under 1 KiB, names files that exist, claims no authority", () => {

@@ -3,7 +3,8 @@
 //
 // Thin wrapper over EXISTING capabilities (engagement.mjs helpers + the Bridge's caido.projects op).
 // No new API/framework. Offline except `projects` (discovery, talks to Caido via the Bridge).
-// Secrets/config auto-load from <repo>/.env (native, precedence: environment wins). Values never printed.
+// Config auto-loads from <repo>/.env (native, environment wins); CAIDO_TOKEN loads only for `projects`, where the
+// context allows it (env-loader.mjs). Values never printed.
 //
 // Usage:
 //   node tools/workspace/cli.mjs init     --name <n> [--modality blackbox|graybox|whitebox] [--project-id <id>]
@@ -20,7 +21,8 @@
 //   node tools/workspace/cli.mjs projects                                      # discover Caido projects
 // Engagement base dir = SA_ENGAGEMENT_ROOT (or --root). Active engagement resolves as:
 //   SA_ENGAGEMENT (explicit override for automation) > per-session pointer (`use`) > NONE (nothing guessed).
-// Optional SA_SESSION_ID isolates the pointer between concurrent sessions sharing one root.
+// The session is bound to the activated project (or the central harness); elsewhere there is NO selection unless
+// SA_SESSION_ID is explicit, and `use`/`clear` refuse. SA_SESSION_ID isolates concurrent sessions, per project.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -28,14 +30,14 @@ import {
   initEngagement, loadEngagement, associateCaidoProject, selectEngagement,
   validateScope, resolveProjectId, sanitizeName, WorkspaceError,
   setActiveEngagement, getActiveEngagement, clearActiveEngagement, listEngagements,
-  bootstrapEngagement, parseTasks, resolveSessionId, findActivatedProject, assertRootOutsideHarness,
+  bootstrapEngagement, parseTasks, resolveSessionId, findActivatedProject, assertRootOutsideHarness, noContextHelp,
 } from "./engagement.mjs";
-import { loadProjectEnv } from "../preflight/env-loader.mjs";
+import { loadScopedEnv } from "../preflight/env-loader.mjs";
 import { createBridge } from "../web-runtime/bridge.mjs";
 import { statusActivation } from "../activation/activate.mjs";
 import { clearMode } from "../modes/mode.mjs";
 
-if (!process.env.SA_SKIP_ENV_FILE) loadProjectEnv(); // populate process.env from <repo>/.env (environment wins; SA_SKIP_ENV_FILE=1 skips it, for hermetic automation/tests)
+loadScopedEnv(); // populate process.env from <repo>/.env (environment wins; SA_SKIP_ENV_FILE=1 skips it, for hermetic automation/tests)
 
 function parse(argv) {
   const a = { cmd: argv[0] || "show", _: [] };
@@ -56,6 +58,7 @@ function resolveName(a, root) {
   if (a.name && a.name !== true) return a.name;
   const active = getActiveEngagement({ root, sessionId: sessionOf() });
   if (active.name) return active.name;
+  if (active.noContext) die(noContextHelp());
   const cands = listEngagements(root).map((e) => e.name);
   die(`no active engagement selected — run: node tools/workspace/cli.mjs use --name <n>` + (cands.length ? ` (available: ${cands.join(", ")})` : " (none exist yet; create with: init --name <n>)"));
 }
@@ -100,6 +103,7 @@ async function main() {
   // Persist the active engagement for THIS session (dynamic selection, no .env edit needed).
   if (a.cmd === "use") {
     const root = needRoot(a);
+    if (!sessionOf()) die(noContextHelp());
     if (!a.name || a.name === true) {
       const cands = listEngagements(root).map((e) => e.name);
       die(`--name required (exact engagement name; never guessed)` + (cands.length ? ` — available: ${cands.join(", ")}` : ""));
@@ -123,6 +127,7 @@ async function main() {
   if (a.cmd === "active") {
     const root = rootOf(a);
     const active = getActiveEngagement({ root, sessionId: sessionOf() });
+    if (active.noContext) die(noContextHelp());
     if (!active.name) { console.log("no active engagement (select one: use --name <n>; or set SA_ENGAGEMENT for automation)"); return; }
     console.log(`active: ${active.name}  (via ${active.source})${active.unresolved ? "  [UNRESOLVED — not found under root]" : ""}`);
     return;
@@ -130,6 +135,7 @@ async function main() {
 
   if (a.cmd === "clear") {
     const root = needRoot(a);
+    if (!sessionOf()) die(noContextHelp());
     clearActiveEngagement({ root, sessionId: sessionOf() });
     console.log("active engagement cleared (session). SA_ENGAGEMENT override, if set, still applies.");
     return;
@@ -214,12 +220,14 @@ async function main() {
       const mark = active.name === e.name ? "*" : " ";
       console.log(` ${mark} ${e.name.padEnd(24)} modality=${e.modality || "?"}  project=${e.caidoProjectId ? `${e.caidoProjectId}(${e.caidoProjectSource})` : "none"}  kind=${e.kind}`);
     }
-    if (active.name) console.log(`\n(* = active, via ${active.source})`); else console.log(`\n(no active engagement — select: use --name <n>)`);
+    if (active.name) console.log(`\n(* = active, via ${active.source})`); else console.log(active.noContext ? `\n(${noContextHelp()})` : `\n(no active engagement — select: use --name <n>)`);
     return;
   }
 
   if (a.cmd === "projects") {
+    const envLoad = loadScopedEnv({ need: ["caido"] });
     const baseUrl = process.env.CAIDO_BASE_URL, token = process.env.CAIDO_TOKEN;
+    if (!token && envLoad.withheld.includes("CAIDO_TOKEN")) die(`CAIDO_TOKEN withheld: ${envLoad.caidoDenied} (or export it for this command)`);
     if (!baseUrl || !token) die("CAIDO_BASE_URL and CAIDO_TOKEN required (instance config) — set them in .env");
     const bridge = createBridge();
     try {

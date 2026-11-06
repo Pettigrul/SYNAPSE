@@ -24,7 +24,8 @@ export const LINKS = [
 ];
 // Extra discovery points per declared runtime, verified against real Pi 1.4 and agy 1.5 runs. Both load AGENTS.md
 // (a thin pointer to SKILL.md). Pi resolves .pi/settings.json from the PROJECT's .pi/, so it wires the project's own
-// links; agy reads .agents/skills (a tracked link to .claude/skills: same skills, no copy). Nothing global.
+// links; agy reads .agents/skills (a tracked dir of links: the 13 skills plus security-auditor -> SKILL.md, no copy).
+// Nothing global.
 export const RUNTIME_LINKS = { pi: ["AGENTS.md", ".pi/settings.json"], antigravity: ["AGENTS.md", ".agents/skills"] };
 
 // The central harness = where this code lives (tools/activation → repo root). No global lookup.
@@ -43,6 +44,28 @@ function assertSafeProject(projectDir, home) {
   return p;
 }
 
+// Project-supplied resources that a runtime loads once the project is trusted (Pi security docs; agy changelog), or
+// that load regardless (context files). Code can run from them, so the operator reviews them before trusting: this
+// reports, it does not judge or block. Our own links are excluded. Pi also takes .agents/skills and context files from ancestors.
+const RUNTIME_CONFIG = [
+  [".pi/settings.json", "gated"], [".pi/mcp.json", "gated"], [".pi/extensions", "executable"], [".pi/skills", "gated"],
+  [".pi/prompts", "gated"], [".pi/themes", "gated"], [".pi/SYSTEM.md", "gated"], [".pi/APPEND_SYSTEM.md", "gated"],
+  [".agents/skills", "gated"], [".agents/skills.json", "gated"], [".agents/plugins.json", "executable"], [".agents/hooks.json", "executable"],
+  [".agents/rules", "gated"], [".agents/rules.json", "gated"], [".agents/agents", "gated"], [".agents/agents.json", "gated"],
+  ["AGENTS.override.md", "context"], ["CLAUDE.md", "context"], ["AGENTS.md", "context"],
+];
+export function auditRuntimeConfig({ projectDir }) {
+  const p = path.resolve(projectDir);
+  const lexists = (f) => { try { fs.lstatSync(f); return true; } catch { return false; } };
+  let links = []; try { const l = JSON.parse(fs.readFileSync(path.join(p, MARKER), "utf8")).links; if (Array.isArray(l)) links = l; } catch { /* not activated */ }
+  const found = RUNTIME_CONFIG.filter(([rel]) => !links.includes(rel) && lexists(path.join(p, rel))).map(([rel, kind]) => ({ path: rel, kind }));
+  for (let d = path.dirname(p); d !== path.dirname(d) && d !== os.homedir(); d = path.dirname(d)) {
+    if (lexists(path.join(d, ".agents", "skills"))) found.push({ path: path.join(d, ".agents", "skills"), kind: "gated" });
+    for (const f of ["AGENTS.override.md", "AGENTS.md", "CLAUDE.md"]) if (lexists(path.join(d, f))) found.push({ path: path.join(d, f), kind: "context" });
+  }
+  return found;
+}
+
 const isOurLink = (dest, src) => { try { return fs.lstatSync(dest).isSymbolicLink() && path.resolve(path.dirname(dest), fs.readlinkSync(dest)) === path.resolve(src); } catch { return false; } };
 
 export function statusActivation({ projectDir }) {
@@ -50,14 +73,15 @@ export function statusActivation({ projectDir }) {
   const markerPath = path.join(p, MARKER);
   if (!fs.existsSync(markerPath)) return { activated: false, projectDir: p };
   let m; try { m = JSON.parse(fs.readFileSync(markerPath, "utf8")); } catch { return { activated: false, projectDir: p, corrupt: true }; }
-  const links = (m.links || []).map((rel) => {
+  if (typeof m?.hackbotHome !== "string" || !Array.isArray(m.links) || !m.links.every((l) => typeof l === "string")) return { activated: false, projectDir: p, corrupt: true };
+  const links = m.links.map((rel) => {
     const dest = path.join(p, rel), src = path.join(m.hackbotHome, rel);
     return { rel, healthy: isOurLink(dest, src), src };
   });
-  return { activated: true, projectDir: p, hackbotHome: m.hackbotHome, runtimes: m.runtimes || [], mcp: !!m.mcp, created: m.created || null, links, healthy: links.every((l) => l.healthy) };
+  return { activated: true, projectDir: p, hackbotHome: m.hackbotHome, runtimes: Array.isArray(m.runtimes) ? m.runtimes : [], mcp: !!m.mcp, caido: m.caido === true, created: m.created || null, links, healthy: links.length > 0 && links.every((l) => l.healthy) };
 }
 
-export function activate({ projectDir, home = hackbotHome(), force = false, operator = null, runtimes: runtimesArg = null, mcp = false } = {}) {
+export function activate({ projectDir, home = hackbotHome(), force = false, operator = null, runtimes: runtimesArg = null, mcp = false, caido = null } = {}) {
   const H = path.resolve(home);
   if (!fs.existsSync(path.join(H, "SKILL.md")) || !fs.existsSync(path.join(H, "tools", "workspace", "cli.mjs"))) {
     throw new ActivationError("bad-home", `central harness not found at ${H} (missing SKILL.md/tools) — pass a valid --home`);
@@ -123,11 +147,12 @@ export function activate({ projectDir, home = hackbotHome(), force = false, oper
   const marker = {
     version: 1, hackbotHome: H, created: existing?.created || new Date().toISOString(), updated: new Date().toISOString(),
     operator: operator || existing?.operator || null, runtimes, mcp: !!(mcp && fs.existsSync(path.join(H, ".mcp.json"))),
+    caido: caido === null ? existing?.caido === true : caido === true, // opt-in to CAIDO_TOKEN from the central .env; null keeps the marker's choice
     links, backups, createdDirs,
     note: "Activation LINKS the central harness (no copy, no global install). Does NOT select an engagement or authorize any target. Remove with: deactivate.",
   };
   fs.writeFileSync(path.join(p, MARKER), JSON.stringify(marker, null, 2) + "\n");
-  return { projectDir: p, hackbotHome: H, links, backedUp: Object.keys(backups), mcp: marker.mcp, runtimes };
+  return { projectDir: p, hackbotHome: H, links, backedUp: Object.keys(backups), mcp: marker.mcp, caido: marker.caido, runtimes, runtimeConfig: auditRuntimeConfig({ projectDir: p }) };
 }
 
 export function deactivate({ projectDir } = {}) {

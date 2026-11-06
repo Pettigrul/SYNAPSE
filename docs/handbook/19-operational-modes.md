@@ -36,7 +36,7 @@ Skill fina equivalente: **`/modo`** (`status|copilot|autopilot`).
 ## 19.3 Interação com engagement e sessão
 
 - O modo **pertence à sessão do engagement** (`engagementId` + `SA_SESSION_ID`), **não** ao `.env` global.
-  Estado em `<engagement>/.hackbot/mode[-<SA_SESSION_ID>].json` (padrão existente, confinado; sem DB novo).
+  Estado em `<engagement>/.hackbot/mode[-<sessão>].json` (padrão existente, confinado; sem DB novo).
 - **Copilot é o padrão** quando não há estado. **Autopilot exige seleção explícita.**
 - **Sessões concorrentes isoladas** por `SA_SESSION_ID`. **Troca de engagement invalida** o modo anterior
   (o novo engagement começa em copilot; o arquivo do engagement anterior não é consultado) e exige

@@ -7,7 +7,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { collectEnv } from "./preflight.mjs";
-import { statusActivation } from "../activation/activate.mjs";
+import { statusActivation, auditRuntimeConfig } from "../activation/activate.mjs";
+import { resolveProjectContext, resolveSessionId } from "../workspace/engagement.mjs";
 
 // Discoverable operational skills = dirs under <root>/.claude/skills that carry a SKILL.md. INFORMATIONAL only
 // (a troubleshooting aid for R5 — it does NOT prove Claude Code's live slash-command discovery, which happens
@@ -28,6 +29,9 @@ export function runDoctor(env) {
     runtimes: Object.entries(env.runtimes).filter(([, v]) => v).map(([k]) => k),
     adapterDocs: env.adapters,
     activation: (() => { const s = statusActivation({ projectDir: process.cwd() }); return s.activated ? `${s.projectDir} (declared: ${s.runtimes.join(", ")}; healthy: ${s.healthy})` : "(cwd is not an activated project)"; })(),
+    sessionContext: (() => { const c = resolveProjectContext(); let s = null; try { s = resolveSessionId(); } catch { /* unusable SA_SESSION_ID: no session */ } return `${c.kind}${c.dir ? ` ${c.dir}` : ""}; session ${s || "(none)"}`; })(),
+    runtimeConfigReview: (() => { const f = auditRuntimeConfig({ projectDir: resolveProjectContext().dir || process.cwd() }); return f.length ? f.map((x) => x.path).join(", ") : "(no project-supplied runtime config found)"; })(),
+    bridgeByRuntime: "pi: native tools (extension, operator contexts); antigravity: no stateful adapter, adapters/cli.mjs http.* only; claude-code: no native tool path (see adapters/)",
     claudeSkills: skills.length ? `${skills.length}: ${skills.join(", ")}` : "(none under .claude/skills)",
     kb: { categories: env.kb.skillDirs, validator: env.kb.validator, manifest: env.kb.manifest },
     policies: env.policies,
@@ -53,13 +57,14 @@ function hints(env) {
   if (!env.browser.playwright) h.push("No playwright-core — visual Browser Runtime unavailable; HTTP fallback only. Chrome/Edge must be installed; the runtime never downloads a browser.");
   if (!env.caido.baseUrl || !env.caido.token) h.push("Caido instance not fully configured — set CAIDO_BASE_URL / CAIDO_TOKEN (store the PAT in an env var or an ACL-restricted user file, never in the repo).");
   if (!env.workspace.engagementRoot) h.push("No engagement base dir — set SA_ENGAGEMENT_ROOT to a directory OUTSIDE this repo.");
-  if (env.workspace.engagementRoot && !(env.engagement && env.engagement.selected)) h.push("No active engagement — select one for this session: node tools/workspace/cli.mjs use --name <name> (list: cli.mjs list). SA_ENGAGEMENT still works as an explicit override for automation.");
+  if (env.workspace.engagementRoot && env.engagement && env.engagement.noContext) h.push("No project context here — run from an activated project or the harness root, or set SA_SESSION_ID; a selection never carries over between projects.");
+  else if (env.workspace.engagementRoot && !(env.engagement && env.engagement.selected)) h.push("No active engagement — select one for this session: node tools/workspace/cli.mjs use --name <name> (list: cli.mjs list). SA_ENGAGEMENT still works as an explicit override for automation.");
   if (env.engagement && env.engagement.selected && !env.engagement.caidoProjectId) h.push(`Active engagement '${env.engagement.name}' has no Caido project — associate one: node tools/workspace/cli.mjs associate --name ${env.engagement.name} --project-id <id> (discover with: cli.mjs projects).`);
   if (env.evidence.source === "engagement" && !env.evidence.writable) h.push(`Engagement dir not writable — cannot create ${env.evidence.dir}; fix permissions on the engagement directory.`);
   if (!env.evidence.dir) h.push("No evidence destination — persistent evidence (screenshots, captures) requires an active engagement; select one: node tools/workspace/cli.mjs use --name <name>.");
   if (env.evidence.source === "legacy-env") h.push("Using legacy SA_EVIDENCE_DIR (no active engagement) — prefer per-engagement evidence by selecting an engagement; SA_EVIDENCE_DIR never overrides an active engagement.");
-  if (env.runtimes.pi) h.push("Pi: skills run as /skill:<name> (e.g. /skill:modo). Project .pi/settings.json is trust-gated: use `pi -a` or /trust; print/json/rpc modes skip it otherwise.");
-  if (env.runtimes.antigravity) h.push("Antigravity: run `agy` from an activated project; AGENTS.md and .agents/skills load from there, and /skills lists them.");
+  if (env.runtimes.pi) h.push("Pi: skills run as /skill:<name> (e.g. /skill:modo). Project .pi/settings.json is trust-gated: `pi -a` or /trust load ALL project-local resources, including executable extensions, so review them first (see runtimeConfigReview) or use the explicit `-na` launch in the Pi guide.");
+  if (env.runtimes.antigravity) h.push("Antigravity: run `agy` from an activated project; AGENTS.md and .agents/skills load from there, /skills lists them, and /security-auditor loads the dispatcher.");
   if (env.runtimes.claudeCode) h.push("Slash commands use each skill's EXACT name (e.g. /modo, /iniciar-pentest). Claude Code discovers .claude/skills/ at SESSION START — if a skill is missing, start a fresh session to refresh discovery (the 'claudeSkills' fact lists what is installed).");
   return h;
 }

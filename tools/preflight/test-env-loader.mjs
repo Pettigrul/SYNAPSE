@@ -60,7 +60,7 @@ t("6 absent file → loaded:false", () => {
 // 7 — load from a written file into a fresh target
 t("7 load from file", () => {
   writeEnv(".env", `CAIDO_PROJECT_ID=proj-123\nCAIDO_TOKEN=${SECRET}\n`);
-  const target = {}; const r = loadProjectEnv({ root: tmp, target });
+  const target = {}; const r = loadProjectEnv({ root: tmp, target, allow: ["CAIDO_PROJECT_ID", "CAIDO_TOKEN"] });
   assert.equal(r.loaded, true);
   assert.deepEqual(r.applied.sort(), ["CAIDO_PROJECT_ID", "CAIDO_TOKEN"]);
   assert.equal(target.CAIDO_TOKEN, SECRET); assert.equal(target.CAIDO_PROJECT_ID, "proj-123");
@@ -77,7 +77,7 @@ t("8 load precedence", () => {
 // 9 — SANITIZATION: summary never contains a VALUE (only names)
 t("9 sanitization: no values in summary", () => {
   writeEnv(".env", `CAIDO_TOKEN=${SECRET}\n`);
-  const r = loadProjectEnv({ root: tmp, target: {} });
+  const r = loadProjectEnv({ root: tmp, target: {}, allow: ["CAIDO_TOKEN"] });
   const s = JSON.stringify(r);
   assert.ok(!s.includes(SECRET), "summary leaked a value!");
   assert.ok(r.keys.includes("CAIDO_TOKEN") && r.applied.includes("CAIDO_TOKEN")); // names ok

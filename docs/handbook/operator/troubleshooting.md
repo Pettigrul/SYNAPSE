@@ -10,7 +10,11 @@
 | `SA_ENGAGEMENT_ROOT not set` | root não definido | defina `SA_ENGAGEMENT_ROOT` no `.env` (externo ao repo) |
 | `root-inside-harness` | root resolve para dentro do harness | use um diretório externo, ou `engagements/` do harness |
 | `bad-runtime` no `bootstrap` | valor de `--runtime` desconhecido | `claude`, `claude-code`, `agents`, `antigravity`, `pi` ou `both` |
-| Engagement ativo em um projeto e não em outro | em projeto ativado, a seleção é por projeto | `use --name <n>` em cada projeto; um `SA_SESSION_ID` explícito vence |
+| Engagement ativo em um projeto e não em outro | a seleção é por projeto, mesmo com o mesmo `SA_SESSION_ID` | `use --name <n>` em cada projeto |
+| `no unambiguous project context` | fora de projeto ativado e da raiz do harness (inclui subdiretório do harness e repositório aninhado), ou marcador ilegível | rode da raiz do projeto ou do harness, ative o projeto, ou defina `SA_SESSION_ID` para automação; comandos de leitura aceitam `--name` |
+| Repositório clonado dentro do projeto ativado recusa `use` | repositório aninhado não herda a seleção do projeto pai | rode da raiz do projeto, ou ative o repositório clonado se ele for o projeto de trabalho |
+| Seleção antiga sumiu após atualizar | ponteiro padrão removido; `SA_SESSION_ID` agora preso ao projeto | `use --name <n>` de novo; `active.json` antigo é ignorado e pode ser descartado |
+| `SA_ENGAGEMENT` do `.env` não vale em um projeto | seletor do `.env` central só vale na raiz do harness | exporte a variável ou use `use --name <n>` |
 | `no active engagement selected` | nenhum engagement selecionado | `node tools/workspace/cli.mjs use --name <n>` (ou `/usar-engagement`) |
 | `no engagement named '<x>'` | nome não existe (match exato, sem adivinhar) | ver candidatos listados; `cli.mjs list` |
 | Trocar de engagement não "limpa" o chat | a troca **não** apaga o histórico do LLM | inicie uma **sessão limpa** após `use` numa troca |
@@ -28,6 +32,7 @@
 | Sintoma | Código | Ação |
 |---------|--------|------|
 | Sem config de instância | `caido-not-configured` | defina `CAIDO_BASE_URL`/`CAIDO_TOKEN` no `.env` |
+| `CAIDO_TOKEN withheld` | o projeto não optou pelo token central, ou seus links não estão íntegros | confira com `status`; o operador roda `activate --project <dir> --caido` (`--force` só depois de revisar um conflito), ou exporta só para o comando |
 | Engagement sem projeto | `caido-no-project` | `cli.mjs associate --name <n> --project-id <uuid>` |
 | Projeto corrente ≠ associado | `caido-project-mismatch` | selecione o projeto certo na instância ou reassocie (`--force`) |
 | `projects` indisponível (`available:false`) | instância local sem `@cloud` | use o UUID visível na UI / `currentProject` |
@@ -55,12 +60,13 @@
 | `unknown runtime` | valor de `--runtime` desconhecido | `claude-code`, `pi`, `antigravity`, `all` ou lista separada por vírgula |
 | Symlink falha no Windows | (erro de FS) | habilite *Developer Mode* ou use **Layout B** (ver [runtimes.md](runtimes.md)) |
 | `status` mostra `BAD` em um link | link quebrado/movido | `deactivate` + `activate` novamente |
+| `project-supplied runtime config` | o projeto traz `.pi/extensions`, hooks ou outro recurso próprio | não bloqueia; revise antes de confiar no projeto em um runtime |
 
 ## Pi Agent ([guia](pi-agent.md))
 
 | Sintoma | Causa | Ação |
 |---------|-------|------|
-| Skills ou ferramentas do Bridge não aparecem | `.pi/settings.json` exige *trust* | `pi -a` ou `/trust` |
+| Skills ou ferramentas do Bridge não aparecem | `.pi/settings.json` exige *trust* | em projeto revisado, `pi -a` ou `/trust`; senão, o `-na` com caminhos explícitos ([guia](pi-agent.md)) |
 | Modelo inesperado | o padrão do Pi pode não ser OpenAI | passe `--provider` e `--model` |
 | Skills que não são do SYNAPSE | o `HOME` real carrega suas skills globais | esperado |
 | `no-trusted-context` | `SECAUDIT_BRIDGE_CONTEXTS` ausente ou inválido | corrija o JSON escrito pelo operador |
@@ -71,7 +77,10 @@
 |---------|-------|------|
 | Código 0, `status: SUCCESS`, resposta vazia | ferramenta negada sem interação | examine `denied_actions`; a decisão é do operador (ver guia) |
 | `/skills` sem skills do SYNAPSE | projeto não ativado para o runtime | `activate --project <dir> --runtime antigravity` |
-| Resposta sem as classes de autorização | dispatcher não aberto (cenário 2 FAIL) | peça a leitura do `SKILL.md`; não trate como garantia |
+| Resposta sem as classes de autorização | o modelo não abriu o dispatcher | comece com `/security-auditor` e confira o `read_file` no log |
+| Agente diz que a Bridge protege o fluxo | não existe ferramenta `securityauditor_*` no `agy` | é falso; ver [guia](antigravity.md) |
+| `contexts-file-withheld` | `SECAUDIT_BRIDGE_CONTEXTS` só no `.env` central, usado de um projeto | exporte a variável no comando |
+| `caller-scope-refused` / `engagement-mismatch` | `adapters/cli.mjs` com arquivo de contextos | nomeie `eng:<engagement selecionado>`; o escopo vem do arquivo |
 | `stateful-op-unsupported-in-cli` (saída 3) | op com estado em `adapters/cli.mjs` | sem caminho neste runtime |
 
 ## Preflight — vereditos

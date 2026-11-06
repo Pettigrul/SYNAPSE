@@ -20,7 +20,7 @@
 ```
 <repo>/                      # harness (único)
 SA_ENGAGEMENT_ROOT/
-├── .sa-state/  active[-<SA_SESSION_ID>].json   # ponteiro de seleção (sem segredos)
+├── .sa-state/  active-<sessão>.json   # ponteiro de seleção (sem segredos)
 ├── acme/      .engagement.json (caido.projectId=…) · scope.md · .hackbot/ (estado) · evidence/ (evidências) · 1-Reports/ …
 └── globex/    .engagement.json (caido.projectId=…) · scope.md · .hackbot/ · evidence/ …
 ```

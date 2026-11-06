@@ -10,7 +10,8 @@ description: >
 
 Interface **fina** sobre o CLI de workspace — a escrita do `caido.projectId` no manifesto e a recusa de
 rebind silencioso vivem no Node. A instância Caido (`CAIDO_BASE_URL`/`CAIDO_TOKEN`) é config de **instância**
-(`.env`); o **projeto** pertence ao **engagement**.
+(`.env`); o **projeto** pertence ao **engagement**. A descoberta usa o token: em projeto ativado, só com
+`activate --caido`, decisão do operador. Sem isso o CLI recusa (`CAIDO_TOKEN withheld`); peça o id do projeto ao operador.
 
 Descoberta (opcional, precisa de instância configurada — reusa o Bridge `caido.projects`):
 

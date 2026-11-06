@@ -35,6 +35,12 @@ supervisionado**, você pode planejar e **propor**
 os passos da investigação, mas **toda** ação Class A continua exigindo aprovação. Nenhum modo concede
 capability nova nem acesso Whitebox automático.
 
+**Antes do Passo 2, confira suas ferramentas.** Sem `securityauditor_invoke` (hoje, no Antigravity e sem o adapter
+carregado no Pi), este fluxo **não** está protegido pela Bridge: nenhum Scope Guard, Approval Gate, limite ou
+proveniência se aplica ao que você fizer. Diga isso ao operador, não afirme essa proteção, não produza um Investigation
+Record como se viesse do Bridge e limite-se à análise do material já disponível. Comandos de shell ou
+`tools/web-runtime/adapters/cli.mjs` não substituem as operações com estado desse fluxo.
+
 Passo 2 — conduzir a investigação pelo **mecanismo normal do agente** (dispatcher + `securityauditor_invoke`),
 seguindo `references/flows-caido-investigation.md`: hipótese → preparação (`investigation.start/propose`) →
 execução **sob aprovação** → captura de evidência → **Investigation Record** (`investigation.finalize`).

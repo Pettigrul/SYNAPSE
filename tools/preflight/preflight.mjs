@@ -83,8 +83,9 @@ function resolveEvidenceConfig(env, engagement) {
 // only a single-engagement compat fallback. Deterministic; never picks an engagement implicitly.
 function resolveActiveEngagement(env) {
   const root = env.SA_ENGAGEMENT_ROOT || null;
-  const active = getActiveEngagement({ root, env, sessionId: resolveSessionId({ env }) });
-  const base = { selected: !!active.name, source: active.source, root, name: active.name || null, dir: active.dir || null, managed: false, caidoProjectId: null, caidoProjectSource: null };
+  let sessionId = null; try { sessionId = resolveSessionId({ env }); } catch { /* unusable SA_SESSION_ID: reported as no selection, not a crash */ }
+  const active = getActiveEngagement({ root, env, sessionId });
+  const base = { selected: !!active.name, noContext: !!active.noContext, source: active.source, root, name: active.name || null, dir: active.dir || null, managed: false, caidoProjectId: null, caidoProjectSource: null };
   if (!active.name || !active.dir) return base; // none, or an unresolved override/stale pointer
   try {
     const eng = loadEngagement({ dir: active.dir });
