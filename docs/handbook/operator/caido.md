@@ -4,6 +4,11 @@
 > [cap. 16](../16-multi-engagement-and-caido-onboarding.md) (binding/onboarding), [cap. 10–14](../10-caido-live-history-monitor.md) (Monitor/Copilot/Ativo/Investigação/Workflow).
 > **Nunca** inclua credenciais reais. **Workflows nativos Caido (F5b) = V2, fora do MVP.**
 
+## Credencial e opt-in por projeto
+
+O `CAIDO_TOKEN` do `.env` central chega à raiz do harness e aos projetos com `activate --project <dir> --caido`, decisão guardada
+fora do projeto, ao lado do `.env`. Detalhes e limites: [configuração](configuration.md#opt-in-do-caido).
+
 ## 1. URL da instância e GraphQL
 - A API é **`<CAIDO_BASE_URL>/graphql`**. Caido desktop local: normalmente `http://127.0.0.1:8080`.
 - Abra `<baseUrl>/graphql` no navegador para o GraphQL Playground (inspeção). Root é `QueryRoot`.

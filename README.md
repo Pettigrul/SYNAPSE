@@ -189,7 +189,8 @@ node tools/preflight/cli.mjs doctor             # checks the environment and run
 ```
 
 This `.env` is central, so it does **not** reach every project. Only known plain config applies everywhere. `CAIDO_TOKEN` loads only for the commands that need it, at
-the harness root or in a project activated with `--caido`; `SA_ENGAGEMENT`, `SA_SESSION_ID`, `CAIDO_PROJECT_ID` and other
+the harness root or in a project activated with `--caido`, whose decision is kept beside `.env`, by real path, not in the
+project; `SA_ENGAGEMENT`, `SA_SESSION_ID`, `CAIDO_PROJECT_ID` and other
 context-bound keys apply only at the harness root; any unknown key is withheld. Variables already exported win; `SA_SKIP_ENV_FILE=1` skips the file. This reduces
 accidental exposure and is not a barrier: an agent with a shell can read the file
 ([configuration guide](docs/handbook/operator/configuration.md)).
@@ -257,7 +258,7 @@ agy -p /skills       # lists skills without a model turn; the dispatcher and the
   engagement selected in the project; either form reports `operatorVerified: false`, because the caller may be the agent
   itself. `/investigar`'s stateful ops have no path here.
 - **Knowledge is not copied:** it points at `skills/`.
-- **Status:** **PARTIAL, not homologated.** Skill discovery, `AGENTS.md` loading and opening the dispatcher are VALIDATED REAL;
+- **Status:** **PARTIAL, not homologated.** Skill discovery, `AGENTS.md` loading and opening the dispatcher through `/security-auditor` are VALIDATED REAL (a natural prompt doesn't always open it);
   following the dispatcher is not verified, and workflow scenarios are BLOCKED headless.
 
 ### Claude Code (additional runtime)
@@ -283,9 +284,9 @@ node tools/activation/cli.mjs activate --project <dir>   # local activation in a
 | Variable | Required | Purpose |
 |---|---|---|
 | `CAIDO_BASE_URL` | for Caido | Caido GraphQL base URL |
-| `CAIDO_TOKEN` | for Caido | Bearer token (**never printed / versioned**). From `.env` only at the harness root or with `activate --caido`, and only for the commands that need it |
+| `CAIDO_TOKEN` | for Caido | Bearer token (**never printed / versioned**). From `.env` only at the harness root or with `activate --caido`, recorded beside `.env`, and only for the commands that need it |
 | `SA_ENGAGEMENT_ROOT` | yes, for engagements | Engagements root directory (absolute path, outside the harness; inside it, only `engagements/` is accepted) |
-| `SA_SESSION_ID` | optional | Separate session for the active-engagement pointer. An activated project or the harness root derives a stable session without it; an explicit value stays bound to the project. Outside both it is the only way to have a selection: otherwise `use` refuses |
+| `SA_SESSION_ID` | optional | Separate session for the active-engagement pointer. An activated project or the harness root derives a stable session without it; an explicit value stays bound to the project or harness root, and gives no session inside harness resources linked into projects. Outside both it is the only way to have a selection: otherwise `use` refuses |
 | `SECAUDIT_BRIDGE_CONTEXTS` | for Bridge tools on Pi | Path to the operator-written Execution Context JSON |
 | `SA_SKIP_ENV_FILE=1` | tests | Hermetic test mode (ignores `.env`) |
 
@@ -405,7 +406,7 @@ headless.
 | Entry point | `pi -a` from a reviewed activated project, or `pi -na` with explicit paths; `/skill:<name>` | `agy` from an activated project; `/<name>` | `.claude/skills/` (session start) |
 | Skill discovery | **VALIDATED REAL** | **VALIDATED REAL** (13/13) | **VALIDATED REAL** |
 | Local activation | **VALIDATED REAL** | **VALIDATED REAL** | **VALIDATED REAL** |
-| Dispatcher | **VALIDATED REAL** (read by the agent) | **VALIDATED REAL** for opening it: `read_file` in the log and a random marker from the file (scenario 2); following it is not verified | **VALIDATED REAL** |
+| Dispatcher | **VALIDATED REAL** (read by the agent) | **VALIDATED REAL** through `/security-auditor`: `read_file` in the log and a random marker from the file; a natural prompt opens it in most runs, not all; following it is not verified | **VALIDATED REAL** |
 | Workspace / Bootstrap | **VALIDATED REAL** | **BLOCKED** headless; interactive NOT RUN | **VALIDATED REAL** |
 | Mode switch | **VALIDATED REAL** | **BLOCKED** headless; interactive NOT RUN | **VALIDATED REAL** |
 | Capabilities (Bridge) | **VALIDATED REAL**: `http.inspect` on a loopback fixture, out-of-scope refused | **PARTIAL**: no stateful adapter, so flows are not Bridge-protected; `adapters/cli.mjs` TESTED OFFLINE, stateless only; through the agent BLOCKED | TESTED OFFLINE |
@@ -419,16 +420,16 @@ headless.
 | Live end-to-end, real target | **NOT RUN** | **NOT RUN** | **PARTIAL**: integration VALIDATED REAL; in-scope analysis NOT RUN (NO DATA) |
 | Windows | **NOT RUN** | **NOT RUN** | **NOT RUN** |
 
-> **Pi:** the last full acceptance pass on the final tree scored **12/14** (10 runs, about US$0.05): in scenarios 4 and 12 the
-> agent stopped before finishing, without breaching any limit. Earlier passes this round scored 14/14 and 13/14, so **results
-> vary between passes**: across 6 measurements scenario 4 passed 4 and scenario 12 passed 3, and none sent a request, invented
-> an engagement or changed the selection. See [report 48](docs/architecture-review/48-runtime-security-hardening.md).
+> **Pi:** the last full acceptance pass scored **12/14** (scenarios 5 and 12 FAIL; the two before it 13/14 and 11/14). **Results vary between passes.** Pi itself doesn't
+> interrupt anything: the model ends its turn before finishing in roughly a quarter to a third of compound prompts (small samples), and
+> the variables tested don't explain that rate; `SKILL.md`, the policies, the model and its thinking level were not varied. A misleading `AGENTS.md` line that steered it toward the Bridge is fixed, and no recorded tool call was classified as executed against
+> the out-of-scope host (text detection on logs, no network capture). See [report 49](docs/architecture-review/49-pi-reliability-stabilization.md).
 > The Autopilot prompt names the `next` selector; an
 > earlier run without that hint called `next` once. This is validation on synthetic data,
 > not a pentest of a real target.
 >
-> **Antigravity:** scenario 1 PASS (activation, discovery); scenario 2 **PASS** (the agent opens the dispatcher, shown by a `read_file`
-> event and a random marker from the file; following it is not verified); scenarios 3-11 **BLOCKED** headless, never run past the
+> **Antigravity:** scenario 1 PASS (activation, discovery); scenario 2 varies: a natural prompt opens the dispatcher in most runs, not all, while `/security-auditor` loads it, shown by a `read_file`
+> event and a random marker from the file; following it is not verified; scenarios 3-11 **BLOCKED** headless, never run past the
 > permission denial; scenario 12 PASS covers only a read-failure path; scenario 13 **PARTIAL**. Antigravity is
 > **not homologated**.
 >
@@ -511,7 +512,7 @@ SYNAPSE/
 ├── .agents/                     # Antigravity skills (link to .claude/skills)
 ├── docs/
 │   ├── handbook/                # Operator + engineering handbook
-│   └── architecture-review/     # Historical reviews 00–48 and archive/ (traceability)
+│   └── architecture-review/     # Historical reviews 00–49 and archive/ (traceability)
 └── engagements/                 # Local engagement data (git-ignored)
 ```
 
@@ -521,8 +522,11 @@ SYNAPSE/
 
 Two separate tracks, whose metrics are **never mixed**.
 
-**Offline (35 suites + KB validator).** All suites use Node's native test runner (no external test deps), make no
+**Offline (39 suites + KB validator).** All suites use Node's native test runner (no external test deps), make no
 model call and are hermetic with `SA_SKIP_ENV_FILE=1`.
+
+`tools/acceptance/rejudge.mjs` replays saved logs read-only with no model. `tools/acceptance/experiment.mjs` runs paired repetitions
+under total run and cost caps, with no retries; preview with `--dry-run`. Traffic to the out-of-scope host is inferred, not captured.
 
 ```bash
 # KB validator: must report T=112/112, B=15/15, total=127/127
@@ -564,7 +568,11 @@ node tools/acceptance/runtime-acceptance.mjs --runtime pi|antigravity --harness 
 |---|---|---|
 | Pi does not see SYNAPSE skills or Bridge tools | Project `.pi/settings.json` is trust-gated | On a reviewed project, `pi -a` or `/trust`; otherwise `pi -na` with explicit paths |
 | `no unambiguous project context` | Not at an activated project or the harness root (a harness subdirectory or a nested repository doesn't count), or the marker is unreadable | Run from the root, activate the project, or set `SA_SESSION_ID` for automation; read commands also take `--name` |
-| `CAIDO_TOKEN withheld` | This project did not opt in to the central token | The operator runs `activate --project <dir> --caido`, or exports it for that command |
+| `CAIDO_TOKEN withheld` | No opt-in for this project in this harness: never granted, moved, renamed, copied, or activated before the decision moved out of the project | If you trust it, the operator runs `activate --project <dir> --caido`, or exports the token for that command |
+| `SA_ENGAGEMENT=… conflicts` | The variable disagrees with this context's selection; nothing was written | `unset SA_ENGAGEMENT` or `use --name <n>` |
+| `SA_ENGAGEMENT=… selects nothing here` | The variable is set in a project, or a repository nested in one, with no selection; it may be left over from another client; nothing was written | `use --name <n>`, `--name <n>`, or `unset SA_ENGAGEMENT` |
+| `activation marker … is a symbolic link` | The marker is a link; it is never followed | `deactivate --project <dir> --repair`, then `activate` |
+| `invalid-marker` | The activation marker is malformed; nothing was changed | `deactivate --project <dir> --repair`, then `activate` |
 | Pi uses an unexpected model | Pi's default model may not be OpenAI | Pass `--provider` and `--model` |
 | Pi lists skills that are not SYNAPSE's | Pi's real `HOME` loads your own global skills too | Expected; SYNAPSE adds to them and changes nothing global |
 | Bridge tools refuse with `no-trusted-context` | `SECAUDIT_BRIDGE_CONTEXTS` missing or invalid | Point it at the operator-written JSON |
@@ -591,7 +599,7 @@ Full table: [`docs/handbook/operator/troubleshooting.md`](docs/handbook/operator
 | Documentation index (current vs. historical) | [`docs/README.md`](docs/README.md) |
 | Caido live history monitor | [`docs/handbook/10-caido-live-history-monitor.md`](docs/handbook/10-caido-live-history-monitor.md) |
 | Capability roadmap | [`docs/architecture-review/08-capability-roadmap.md`](docs/architecture-review/08-capability-roadmap.md) |
-| Historical reviews (00–47) | [`docs/architecture-review/`](docs/architecture-review/) |
+| Historical reviews (00–49) | [`docs/architecture-review/`](docs/architecture-review/) |
 
 The handbook and operator guides are written in Portuguese.
 
@@ -620,7 +628,10 @@ The handbook and operator guides are written in Portuguese.
 - **The Bridge binds its own tools, not the agent.** Pi's `bash` is not sandboxed: it can read the central `.env`, edit the
   contexts file or reach hosts directly. Containment needs OS-level isolation; SYNAPSE ships no sandbox.
 - **Isolation is by context, not by client data.** A selection cannot cross projects, but `list` and `--name` still see every
-  engagement under one `SA_ENGAGEMENT_ROOT`, and an exported `SA_ENGAGEMENT` applies everywhere. Use one root per client.
+  engagement under one `SA_ENGAGEMENT_ROOT`, and an exported `SA_ENGAGEMENT` selects only in a plain directory or at the harness root, with a note (in a project it must match the selection or commands refuse). Use one root per
+  client.
+- **Caido opt-in protects against project content, not a same-user shell.** The decision lives beside `.env`, outside the
+  project, so a repository can't grant itself the token. A process running as the same user can still read `.env` and edit that file.
 - **Pi's real `HOME`** also loads the user's own global skills alongside SYNAPSE.
 - **Analysis on real in-scope traffic** is pending an in-scope capture by the operator (data-gated).
 - **Active Caido operations** require a real authorized instance and per-action approval.

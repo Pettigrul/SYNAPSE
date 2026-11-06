@@ -18,10 +18,20 @@ A política é uma lista de permissão: qualquer chave fora dela fica retida, en
 | Projeto sem opt-in | carrega | não | não | nunca |
 | Fora disso, incluindo subdiretórios do harness | carrega | não | não | nunca |
 
-Variáveis exportadas valem em todos os casos. `doctor` e `preflight` listam os nomes retidos. O opt-in fica no marcador e
-sobrevive à reativação; `--no-caido` revoga. Ele só vale se o marcador apontar, por caminho absoluto, para este harness e todos os links estiverem íntegros. Um marcador
-copiado de outro lugar não concede nada, **mas um repositório preparado por quem conhece o caminho do harness pode forjar um**,
-porque o marcador fica no projeto. O token só iria à `CAIDO_BASE_URL` configurada, em `projects` e no preflight.
+Variáveis exportadas valem em todos os casos. `doctor` e `preflight` listam os nomes retidos. 
+
+### Opt-in do Caido
+
+O opt-in fica em `<harness>/.env.caido-opt-ins.json`, ao lado do `.env`, ignorado pelo Git, com modo 0600, e identifica o projeto pelo caminho real. Sobrevive à reativação. `--no-caido` e `deactivate` revogam.
+
+- **Conteúdo do projeto não concede nada.** Marcador forjado, ausente, corrompido ou com `caido: true` não libera o token. O campo `caido` de um marcador antigo deixou de valer, então um projeto ativado antes desta mudança precisa de novo `activate --caido`, se você confiar nele.
+- **Projeto movido, renomeado ou copiado** perde o opt-in e precisa de novo `activate --caido`. A entrada antiga sai com `deactivate --project <caminho antigo>`.
+- **Arquivo ilegível ou inválido** falha fechado: nenhum projeto recebe o token até você corrigi-lo, ou movê-lo e repetir `--caido`.
+- **Diretório trocado no mesmo caminho** herda a decisão: nada no caminho real distingue um do outro.
+- **Cada cópia do harness** tem as próprias decisões.
+
+> **Isso protege contra o conteúdo do projeto, não contra um shell do mesmo usuário.** Um processo com esse acesso lê o `.env`
+> e pode editar o arquivo de opt-in. Para separar de fato, isole o agente no sistema operacional.
 
 `SECAUDIT_BRIDGE_CONTEXTS` só no `.env` vale na raiz do harness; em projeto, `adapters/cli.mjs` recusa `http.*`
 (`contexts-file-withheld`) em vez de aceitar um escopo do chamador. Exporte a variável no comando.
@@ -34,8 +44,8 @@ porque o marcador fica no projeto. O token só iria à `CAIDO_BASE_URL` configur
 | `CAIDO_BASE_URL` | instância | URL da instância Caido (GraphQL em `<baseUrl>/graphql`) |
 | `CAIDO_TOKEN` | instância, com opt-in por projeto | PAT (`caido_…`) ou access token; header `Authorization: Bearer <token>` |
 | `SA_ENGAGEMENT_ROOT` | instância | diretório-base de **todos** os engagements — **fora** do repo; dentro do harness só `engagements/` é aceito (senão, `root-inside-harness`) |
-| `SA_ENGAGEMENT` | opcional | **override** explícito do engagement ativo (automação); normalmente **vazio**. Pelo `.env`, só vale na raiz do harness; em projeto, exporte |
-| `SA_SESSION_ID` | opcional | isola o ponteiro entre sessões concorrentes. Sem ele, projeto ativado e raiz do harness usam sessão estável derivada do caminho; explícito, em projeto, vira `<id>--prj-<hash>`, sem atravessar projetos. Fora disso é a única forma de ter seleção. Pelo `.env`, só vale na raiz do harness |
+| `SA_ENGAGEMENT` | opcional | seletor para automação; normalmente **vazio**. Seleciona sozinho só em diretório comum ou na raiz do harness (pelo `.env`, só na raiz). Em projeto ativado, repositório aninhado em projeto, marcador inválido ou diretório ligado do harness, não seleciona: tem de coincidir com o ponteiro; caso contrário os comandos recusam sem gravar. Um diretório pessoal ativado estende isso a todo repositório abaixo dele; ali, use `--name`. |
+| `SA_SESSION_ID` | opcional | isola o ponteiro entre sessões concorrentes. Sem ele, projeto ativado e raiz do harness usam sessão estável derivada do caminho; explícito, em projeto ou na raiz do harness, vira `<id>--prj-<hash>`, sem atravessar projetos. Fora disso é a única forma de ter seleção. Pelo `.env`, só vale na raiz do harness |
 | `CAIDO_PROJECT_ID` | compat opcional | **só** single-engagement, só quando o engagement ativo **não** tem projeto; **nunca** sobrepõe o binding. Pelo `.env`, só vale na raiz do harness |
 | `SA_SKIP_ENV_FILE` | opcional | `1` = CLIs **não** carregam o `.env` (automação hermética); não usar em operação normal |
 | `SECAUDIT_BRIDGE_CONTEXTS` | opcional | caminho do JSON de Execution Context escrito pelo operador, para as ferramentas do Bridge no Pi; pode ficar fora do `.env` |
@@ -44,9 +54,9 @@ porque o marcador fica no projeto. O token só iria à `CAIDO_BASE_URL` configur
 ## Precedência de configuração
 
 1. **Variáveis já no ambiente vencem** o `.env` (o `.env` nunca as sobrepõe).
-2. **Engagement ativo:** `--name` no comando > `SA_ENGAGEMENT` (override) > ponteiro da sessão (`use`) > **nenhum** (nunca
-   adivinha). Sessão: `SA_SESSION_ID`, presa ao projeto se houver um > marcador do projeto ativado > raiz do harness >
-   **nenhuma**, e então `use` e `clear` recusam sem gravar. A busca do marcador para em um `.git`: repositório aninhado não
+2. **Engagement ativo:** `--name` no comando > ponteiro da sessão, com o qual `SA_ENGAGEMENT` tem de coincidir > `SA_ENGAGEMENT` sozinho, só fora de projeto > nenhum
+   (`use`) > **nenhum** (nunca adivinha). Sessão: `SA_SESSION_ID`, presa ao projeto ou à raiz do harness > marcador do projeto
+   ativado > raiz do harness > **nenhuma**, e então `use` e `clear` recusam sem gravar. A busca do marcador para em um `.git`: repositório aninhado não
    herda a seleção do projeto pai. Não existe ponteiro padrão compartilhado: um `active.json` antigo
    é ignorado e fica onde está. Marcador ilegível falha fechado, sem subir para o projeto pai.
 3. **Projeto Caido:** manifesto do engagement (`.engagement.json`) > `CAIDO_PROJECT_ID` (compat, só se o
@@ -71,10 +81,11 @@ Sob `SA_ENGAGEMENT_ROOT/<engagement>/` (criado por `cli.mjs init`; **sem** novas
 | `.whitebox-access.log` | log de autorização Whitebox (quando aplicável) |
 
 Ponteiro de seleção por sessão: `SA_ENGAGEMENT_ROOT/.sa-state/active-<sessão>.json` (sem segredos), onde `<sessão>` é
-`prj-<hash>`, `<SA_SESSION_ID>--prj-<hash>` ou, fora de projeto, `<SA_SESSION_ID>`. `list` e `--name` continuam vendo todos os
-engagements do root: para separar clientes de fato, use um `SA_ENGAGEMENT_ROOT` por cliente. Fora de um projeto, o `SA_SESSION_ID` fica preso ao repositório Git em volta ou ao harness, em um subdiretório dele
-(`<id>--repo-<hash>`); em diretório comum e na raiz do harness vale o mesmo id, e um `SA_ENGAGEMENT` exportado vale em qualquer lugar: os dois são atos explícitos
-do operador, então não os deixe exportados ao trocar de cliente.
+`prj-<hash>`, `<SA_SESSION_ID>--prj-<hash>`, `<SA_SESSION_ID>--repo-<hash>` ou, em diretório comum, `<SA_SESSION_ID>`. `list` e `--name` continuam vendo todos os
+engagements do root: para separar clientes de fato, use um `SA_ENGAGEMENT_ROOT` por cliente. O `SA_SESSION_ID` vira `<id>--prj-<hash>` em projeto e na raiz do harness, e `<id>--repo-<hash>` em repositório Git. Em recurso do
+harness que projetos linkam (`<projeto>/tools`), sem caminho lógico, não há sessão. Em diretório comum o id continua compartilhado:
+é ato explícito do operador, então não o deixe exportado ao trocar de cliente. O caminho lógico (`PWD`) só conta dentro do projeto
+ou por um link para o harness: um link do projeto apontando para outro lugar assume o contexto do local físico.
 
 ## Backup e recuperação
 

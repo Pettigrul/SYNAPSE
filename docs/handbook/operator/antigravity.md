@@ -11,13 +11,12 @@ interação humana, em dados sintéticos:
 | Cenário | Resultado | O que significa |
 |---------|-----------|-----------------|
 | 1 — ativação e descoberta | **PASS** | 13/13 skills e `security-auditor` listados por `/skills`; links saudáveis |
-| 2 — dispatcher | **PASS** | com o dispatcher descobrível, o agente abre o `SKILL.md` no prompt natural, e `/security-auditor` devolve um marcador aleatório existente só no arquivo. Evidência: chamada `read_file` no log, por caminho resolvido |
+| 2 — dispatcher | **VARIA** | `/security-auditor` carrega o `SKILL.md` e devolve um marcador aleatório existente só no arquivo, com `read_file` no log. No prompt natural, abre na maioria das execuções, não em todas ([relatório 49](../../architecture-review/49-pi-reliability-stabilization.md)) |
 | 3-11 — fluxos | **BLOCKED** | sem interação, nunca passaram da negação de permissão |
 | 12 — falha controlada | **PASS** | cobre só o caminho de falha de leitura |
 | 13 — isolamento | **PARTIAL** | verificado apenas pela CLI; o shell do agente foi negado |
 
-**Abrir o dispatcher agora está verificado; obedecer a ele, não.** O S2 mede a leitura do arquivo, com poucas execuções e
-um modelo. Como os cenários 3-11 não passam da negação, nenhum comportamento guiado pelo dispatcher foi observado. A
+**Abrir o dispatcher por `/security-auditor` está verificado; pelo prompt natural, nem sempre; obedecer a ele, não.** O S2 mede a leitura do arquivo, com um modelo. Como os cenários 3-11 não passam da negação, nenhum comportamento guiado pelo dispatcher foi observado. A
 expansão de skill (`/engagement-atual`) e a leitura de arquivos funcionaram.
 
 ### Como o dispatcher é carregado

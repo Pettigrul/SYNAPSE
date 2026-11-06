@@ -15,6 +15,8 @@ tenha sido salvo em backup. **Não** apaga dados de engagement/pentest.
 
 ```bash
 node tools/activation/cli.mjs deactivate --project <dir>
+# marcador inválido (invalid-marker): remove só os links deste harness, preserva arquivos e renomeia o marcador
+node tools/activation/cli.mjs deactivate --project <dir> --repair
 ```
 
 - Remove apenas links que ainda apontam para o harness central registrado — **nunca** arquivos reais do

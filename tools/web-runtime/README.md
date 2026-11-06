@@ -134,7 +134,8 @@ database or daemon. **Zero external dependencies.**
   extension runtime. The Execution Context is read from an operator-written JSON file
   (`SECAUDIT_BRIDGE_CONTEXTS`), never from the model.
 - **CLI Adapter** (`adapters/cli.mjs`): optional, **stateless-only** (`capabilities.*`, `http.*`);
-  stateful domains are refused with a pointer to the in-process bridge / Pi adapter. With
+  stateful domains are refused with a pointer to the in-process bridge / Pi adapter. The Pi adapter also refuses a context
+  of another engagement than the selected one. With
   `SECAUDIT_BRIDGE_CONTEXTS` it takes a context from that file, bound to the engagement selected in the project, and
   refuses a caller scope. Either way it reports `operatorVerified: false`: its caller may be the agent itself.
 

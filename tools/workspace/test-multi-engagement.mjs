@@ -216,11 +216,15 @@ await t("19 switch invalidates previous", () => {
   assert.equal(getActiveEngagement({ sessionId: SESSION, root: ROOT, env: {} }).name, "globex");
 });
 
-// 20 — SA_ENGAGEMENT override takes precedence over the session pointer
-await t("20 SA_ENGAGEMENT override precedence", () => {
+// 20 — SA_ENGAGEMENT decides alone without a pointer, and can't outvote a pointer that names another engagement
+await t("20 SA_ENGAGEMENT override: alone it decides; against the pointer nothing is selected", () => {
   setActiveEngagement({ sessionId: SESSION, root: ROOT, name: "globex" }); // pointer = globex
-  const a = getActiveEngagement({ sessionId: SESSION, root: ROOT, env: { SA_ENGAGEMENT: "acme" } });
-  assert.equal(a.name, "acme"); assert.equal(a.source, "env");
+  const a = getActiveEngagement({ sessionId: SESSION, root: ROOT, cwd: ROOT, env: { SA_ENGAGEMENT: "acme" } });
+  assert.equal(a.name, null); assert.equal(a.dir, null); assert.deepEqual(a.conflict, { kind: "mismatch", override: "acme", selected: "globex" });
+  const same = getActiveEngagement({ sessionId: SESSION, root: ROOT, cwd: ROOT, env: { SA_ENGAGEMENT: "globex" } });
+  assert.equal(same.name, "globex"); assert.equal(same.source, "env"); assert.equal(same.confirmed, true);
+  const alone = getActiveEngagement({ sessionId: "no-pointer-here", root: ROOT, cwd: ROOT, env: { SA_ENGAGEMENT: "acme" } }); // ROOT: a plain directory
+  assert.equal(alone.name, "acme"); assert.equal(alone.source, "env"); assert.equal(alone.confirmed, false);
 });
 
 // 21 — stale pointer (engagement removed) → NO fallback to another engagement
@@ -241,8 +245,10 @@ await t("22 isolation preserved under selection", () => {
 
 // 23 — unresolved SA_ENGAGEMENT override is surfaced, not silently replaced
 await t("23 unresolved override surfaced", () => {
-  const a = getActiveEngagement({ sessionId: SESSION, root: ROOT, env: { SA_ENGAGEMENT: "ghost" } });
+  const a = getActiveEngagement({ sessionId: "no-pointer-here", root: ROOT, cwd: ROOT, env: { SA_ENGAGEMENT: "ghost" } });
   assert.equal(a.name, "ghost"); assert.equal(a.source, "env"); assert.equal(a.unresolved, true); assert.equal(a.dir, null);
+  const against = getActiveEngagement({ sessionId: SESSION, root: ROOT, cwd: ROOT, env: { SA_ENGAGEMENT: "ghost" } });
+  assert.equal(against.dir, null); assert.equal(against.conflict.kind, "mismatch", "a selection exists, and the variable disagrees with it");
 });
 
 // 24 — listing is available without any selection (discovery), excludes the state dir

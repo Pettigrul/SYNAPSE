@@ -79,6 +79,13 @@ stateDiagram-v2
   Fechada --> [*]: shutdown (sem recuperação entre processos)
 ```
 
+## 5.5a Fronteiras de contexto e credencial ✅ 🧪
+
+- **Contexto:** nenhuma operação usa outro engagement sem seleção explícita. Sessão presa ao projeto ou à raiz do harness. Em contexto de projeto, `SA_ENGAGEMENT` sem ponteiro igual é recusado, e ponteiro obsoleto também é conflito. No adapter do Pi, contexto com qualquer sinal de engagement (id `eng:`, campo `engagement`, `evidenceDir` sob a raiz, bloco `caido` com `baseUrl`, `token` ou `projectId`) exige seleção correspondente a cada chamada; projeto Caido exige o vínculo do manifesto. Bloco `caido` sem projeto continua utilizável com uma seleção, para `caido.health` e `caido.projects`. Marcador de ativação que seja link é recusado; `deactivate --repair` remove o link sem segui-lo. Na raiz do harness e em diretório comum, um `SA_ENGAGEMENT` exportado ainda seleciona, com aviso.
+- **Opt-in do Caido:** decisão em `<harness>/.env.caido-opt-ins.json`, fora do projeto, por caminho real. Conteúdo do projeto não concede o token.
+- **Ativação:** recusa o próprio harness como projeto, marcador que seja link e links `.claude`, `.pi` ou `.agents` que saem do projeto; `deactivate` não segue caminhos do marcador para fora dele.
+- **Limite:** tudo isso protege contra o conteúdo do projeto e contra erro de operação, **não contra um shell do mesmo usuário**, que lê o `.env` e edita esses arquivos. Isolamento real exige o sistema operacional.
+
 ## 5.6 Limitações / lacunas
 - Completude do Investigation Record em turnos interrompidos (B) — dívida técnica aberta.
 - `evidenceDir` por investigação não auto-derivado do contexto.

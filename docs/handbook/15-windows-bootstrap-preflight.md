@@ -80,7 +80,7 @@ Módulo compartilhado: `tools/preflight/env-loader.mjs` (`loadProjectEnv`/`apply
 - **Setup:** `cp .env.example .env` (Linux/macOS) ou `copy .env.example .env` (Windows) e preencher.
   `.env.example` persiste **config de instância** (`CAIDO_BASE_URL`, `CAIDO_TOKEN`) + a **base** de
   engagements (`SA_ENGAGEMENT_ROOT`). O engagement **ativo** é selecionado por sessão (`cli.mjs use`, cap. 16
-  §16.4.1); `SA_ENGAGEMENT` é override opcional e `CAIDO_PROJECT_ID` é compat single-engagement (o projeto
+  §16.4.1); `SA_ENGAGEMENT` é seletor opcional, só fora de projeto, e `CAIDO_PROJECT_ID` é compat single-engagement (o projeto
   normalmente vem do engagement). **Evidências** vão para `<engagement>/evidence` (sem dir global; o check
   `evidence` resolve o engagement ativo — ver cap. 16 §16.5.1); `SA_EVIDENCE_DIR` está **deprecado** (compat
   legada só sem engagement ativo).

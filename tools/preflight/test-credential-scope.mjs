@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // SecurityAuditor — least privilege for the central .env (deterministic, offline, no LLM, no offensive ops).
-// CAIDO_TOKEN and project-bound selectors stay withheld unless the context allows them. Runs against a disposable copy
+// CAIDO_TOKEN and project-bound selectors stay withheld unless the context allows them, and nothing in a project authorizes
+// the token: the decision lives beside the fixture .env. This protects against project content, not against a same-user shell. Runs against a disposable copy
 // of tools/ with a fixture .env and a generated fake token: never reads the real .env, never prints the token. The only
 // network use is a loopback fixture that records whether the Authorization header arrived.
 
@@ -25,8 +26,8 @@ fs.copyFileSync(path.join(REPO, "SKILL.md"), path.join(H, "SKILL.md"));
 fs.cpSync(path.join(REPO, "tools"), path.join(H, "tools"), { recursive: true, filter: (s) => !s.includes(`${path.sep}node_modules`) });
 const ROOT = fresh("root");
 
-let hits = [];
-const server = http.createServer((req, res) => { hits.push(req.headers.authorization || null); req.resume(); res.setHeader("content-type", "application/json"); res.end(JSON.stringify({ data: {} })); });
+let hits = [], fixtureData = {};
+const server = http.createServer((req, res) => { hits.push(req.headers.authorization || null); req.resume(); res.setHeader("content-type", "application/json"); res.end(JSON.stringify({ data: fixtureData })); });
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
 const BASE = `http://127.0.0.1:${server.address().port}`;
 fs.writeFileSync(path.join(H, ".env"), `CAIDO_BASE_URL=${BASE}\nCAIDO_TOKEN=${TOKEN}\nSA_ENGAGEMENT_ROOT=${ROOT}\nSA_ENGAGEMENT=from-central-env\nSA_SESSION_ID=from-central-env\nCAIDO_PROJECT_ID=from-central-env\nOTHER_API_KEY=${TOKEN}\nGITHUB_PAT=${TOKEN}\nSOME_NEW_KEY=${TOKEN}\n`);
@@ -34,6 +35,24 @@ fs.writeFileSync(path.join(H, ".env"), `CAIDO_BASE_URL=${BASE}\nCAIDO_TOKEN=${TO
 const run = (rel, args, cwd, env = {}) => new Promise((resolve) => {
   execFile(process.execPath, [path.join(H, rel), ...args], { cwd, encoding: "utf8", env: { PATH: process.env.PATH, HOME: TMP, ...env } }, (e, stdout, stderr) => resolve({ code: e ? e.code : 0, out: stdout || "", err: stderr || "", all: `${stdout}${stderr}` }));
 });
+const runAt = (h, rel, args, cwd, env = {}) => new Promise((resolve) => {
+  execFile(process.execPath, [path.join(h, rel), ...args], { cwd, encoding: "utf8", env: { PATH: process.env.PATH, HOME: TMP, ...env } }, (e, stdout, stderr) => resolve({ code: e ? e.code : 0, out: stdout || "", err: stderr || "", all: `${stdout}${stderr}` }));
+});
+const OPT_INS = ".env.caido-opt-ins.json", MARKER_NAME = ".hackbot-activation.json";
+// What the review reproduced: a repository that knows the harness path prepares everything a marker can say.
+const forged = (extra = {}) => {
+  const p = fresh("forged"), links = ["tools", "references", "SKILL.md"].filter((l) => fs.existsSync(path.join(H, l)));
+  for (const l of links) fs.symlinkSync(path.join(H, l), path.join(p, l));
+  fs.writeFileSync(path.join(p, MARKER_NAME), JSON.stringify({ hackbotHome: H, links, caido: true, ...extra }));
+  return p;
+};
+// Runs fn with the opt-in file altered, then puts the decisions back.
+const withStore = async (alter, fn, undo = () => {}) => {
+  const f = path.join(H, OPT_INS); const saved = fs.existsSync(f) ? fs.readFileSync(f) : null;
+  if (saved === null) fs.writeFileSync(f, JSON.stringify({ version: 1, projects: {} }));
+  alter();
+  try { await fn(); } finally { undo(); if (saved === null) fs.rmSync(f, { force: true }); else fs.writeFileSync(f, saved); }
+};
 const WCLI = "tools/workspace/cli.mjs", ACLI = "tools/activation/cli.mjs", PCLI = "tools/preflight/cli.mjs";
 const project = async (...flags) => { const p = fresh("prj"); const r = await run(ACLI, ["activate", "--project", p, "--runtime", "pi", ...flags], TMP); assert.equal(r.code, 0, r.err); return p; };
 // What a CLI's process.env holds after the same load the CLIs do, for a child cwd: names only, never values.
@@ -76,6 +95,15 @@ await t("opted-in project: only the command that needs it gets the token", async
 });
 await t("outside any project: never, even when asked", async () => {
   assert.equal((await probe(fresh("plain"), '["caido"]')).has.CAIDO_TOKEN, false);
+});
+await t("central harness: the selector in its own .env selects there, and bootstrap follows it; the same .env selects nothing in a project", async () => {
+  const root = fresh("root-central"), env = { SA_ENGAGEMENT_ROOT: root }, W = "tools/workspace/cli.mjs";
+  assert.equal((await run(W, ["init", "--name", "from-central-env"], TMP, env)).code, 0);
+  const a = await run(W, ["active"], H, env); assert.match(a.out, /active: from-central-env/); assert.match(a.err, /central \.env|SA_ENGAGEMENT/);
+  assert.equal((await run(W, ["bootstrap", "--runtime", "agents"], H, env)).code, 0);
+  assert.ok(fs.existsSync(path.join(root, "from-central-env", "toDoList.md")));
+  const p = fresh("prj-central"); assert.equal((await run("tools/activation/cli.mjs", ["activate", "--project", p], TMP)).code, 0);
+  assert.match((await run(W, ["active"], p, env)).out, /no active engagement/);
 });
 await t("central harness: selectors from its own .env keep working, token only on demand", async () => {
   const r = await probe(H); assert.equal(r.has.CAIDO_TOKEN, false); assert.equal(r.has.SA_ENGAGEMENT, true); assert.equal(r.has.CAIDO_PROJECT_ID, true);
@@ -133,12 +161,147 @@ await t("a marker naming this harness grants no token when its links aren't inta
   const p = await project("--caido"); fs.unlinkSync(path.join(p, "tools"));
   assert.equal((await probe(p, '["caido"]')).has.CAIDO_TOKEN, false);
 });
-await t("a project opted in through another harness, with healthy links, gets no token from this one", async () => {
-  const { execFileSync } = await import("node:child_process");
+await t("a project opted in through another harness copy gets no token from this one: each copy has its own decisions", async () => {
+  const H2 = path.join(TMP, "harness-2"); fs.cpSync(H, H2, { recursive: true });
   const p = fresh("other-harness");
-  execFileSync(process.execPath, [path.join(REPO, ACLI), "activate", "--project", p, "--runtime", "pi", "--caido"], { env: { ...process.env, SA_SKIP_ENV_FILE: "1" }, stdio: "ignore" });
-  assert.match((await run(ACLI, ["status", "--project", p], TMP)).out, /caido opt-in: true/);
+  const r = await runAt(H2, ACLI, ["activate", "--project", p, "--runtime", "pi", "--caido"], TMP); assert.equal(r.code, 0, r.err);
+  assert.ok(fs.existsSync(path.join(H2, OPT_INS)));
+  assert.match((await runAt(H2, ACLI, ["status", "--project", p], TMP)).out, /caido opt-in: true/);
+  assert.match((await run(ACLI, ["status", "--project", p], TMP)).out, /caido opt-in: false/);
   assert.equal((await probe(p, '["caido"]')).has.CAIDO_TOKEN, false);
+});
+await t("a marker can't point at a friendlier harness: only this harness's own opt-in file counts", async () => {
+  // A forged marker naming another home, whose own opt-in file grants this project: this harness reads only its own file.
+  const evil = fresh("evil-home"), p = forged({ hackbotHome: evil }); fs.writeFileSync(path.join(evil, OPT_INS), JSON.stringify({ version: 1, projects: { [fs.realpathSync(p)]: { granted: true } } }));
+  assert.equal((await probe(p, '["caido"]')).has.CAIDO_TOKEN, false);
+  assert.match((await run(ACLI, ["status", "--project", p], TMP)).out, /caido opt-in: false/);
+});
+await t("forged marker: absolute harness path, real links and caido:true grant nothing", async () => {
+  const p = forged(); hits = [];
+  assert.equal((await probe(p, '["caido"]')).has.CAIDO_TOKEN, false);
+  const r = await run(WCLI, ["projects"], p); noLeak(r);
+  assert.equal(r.code, 2); assert.match(r.err, /no Caido opt-in/); assert.deepEqual(hits, []);
+  const s = await run(ACLI, ["status", "--project", p], TMP);
+  assert.match(s.out, /healthy: true/); assert.match(s.out, /caido opt-in: false/); assert.match(s.out, /no longer honored/); assert.match(s.out, /If you trust this project/);
+});
+await t("transition: re-activating over caido:true doesn't launder it, removes the field and says how to re-grant", async () => {
+  const p = forged();
+  const r = await run(ACLI, ["activate", "--project", p, "--runtime", "pi"], TMP);
+  assert.equal(r.code, 0, r.err); assert.match(r.out, /no longer honored/); assert.match(r.out, /re-run with --caido/);
+  assert.equal((await probe(p, '["caido"]')).has.CAIDO_TOKEN, false);
+  assert.ok(!("caido" in JSON.parse(fs.readFileSync(path.join(p, MARKER_NAME), "utf8"))), "the field is gone");
+  assert.equal((await run(ACLI, ["activate", "--project", p, "--caido"], TMP)).code, 0);
+  assert.equal((await probe(p, '["caido"]')).has.CAIDO_TOKEN, true, "the operator's grant is what counts");
+});
+await t("the decision never lands in the project: no caido field, nothing beside the marker", async () => {
+  const p = await project("--caido");
+  assert.ok(!("caido" in JSON.parse(fs.readFileSync(path.join(p, MARKER_NAME), "utf8"))));
+  assert.ok(!fs.existsSync(path.join(p, OPT_INS)));
+  const m = JSON.parse(fs.readFileSync(path.join(H, OPT_INS), "utf8"));
+  assert.equal(m.projects[fs.realpathSync(p)].granted, true);
+  if (process.platform !== "win32") assert.equal(fs.statSync(path.join(H, OPT_INS)).mode & 0o077, 0, "owner only");
+  assert.match(fs.readFileSync(path.join(REPO, ".gitignore"), "utf8"), /^\.env\*$/m, "kept out of the repo by the .env* rule"); assert.ok(OPT_INS.startsWith(".env"));
+});
+await t("absent marker: nothing, even with a recorded opt-in for that path", async () => {
+  const p = await project("--caido"); fs.unlinkSync(path.join(p, MARKER_NAME));
+  assert.equal((await probe(p, '["caido"]')).has.CAIDO_TOKEN, false);
+});
+await t("copied project: the marker and links come along, the opt-in doesn't", async () => {
+  const p = await project("--caido"), c = path.join(TMP, `copy-${++n}`); fs.cpSync(p, c, { recursive: true, verbatimSymlinks: true });
+  const s = await run(ACLI, ["status", "--project", c], TMP); assert.match(s.out, /healthy: true/);
+  assert.equal((await probe(c, '["caido"]')).has.CAIDO_TOKEN, false);
+  assert.equal((await probe(p, '["caido"]')).has.CAIDO_TOKEN, true, "the original keeps it");
+  const r = await run(WCLI, ["projects"], c); assert.match(r.err, /moved, renamed or copied/); assert.match(r.err, /--caido/); noLeak(r);
+});
+await t("renamed project: loses the opt-in, is told how to re-grant, and the old path can be cleaned up", async () => {
+  const p = await project("--caido"), moved = `${p}-renamed`; fs.renameSync(p, moved);
+  assert.equal((await probe(moved, '["caido"]')).has.CAIDO_TOKEN, false);
+  assert.match((await run(WCLI, ["projects"], moved)).err, /moved, renamed or copied/);
+  const old = await run(ACLI, ["deactivate", "--project", p], TMP);
+  assert.equal(old.code, 0, old.err); assert.match(old.out, /removed the Caido opt-in/);
+  assert.ok(!(p in JSON.parse(fs.readFileSync(path.join(H, OPT_INS), "utf8")).projects));
+  assert.equal((await run(ACLI, ["deactivate", "--project", p], TMP)).code, 2, "nothing left to do there");
+  assert.equal((await run(ACLI, ["activate", "--project", moved, "--caido"], TMP)).code, 0);
+  assert.equal((await probe(moved, '["caido"]')).has.CAIDO_TOKEN, true);
+});
+await t("a project reached through a symlink is the approved one, by real path; a link named like it elsewhere grants the hostile repo nothing", async () => {
+  const p = await project("--caido"), hostile = fresh("hostile"), via = path.join(hostile, path.basename(p)); fs.symlinkSync(p, via);
+  assert.equal((await probe(via, '["caido"]', { PWD: via })).has.CAIDO_TOKEN, true, "physically the approved project");
+  assert.equal((await probe(hostile, '["caido"]')).has.CAIDO_TOKEN, false, "the repo that planted the link");
+  const lookalike = forged(), dir = path.join(path.dirname(lookalike), `${path.basename(p)}-lookalike`); fs.renameSync(lookalike, dir);
+  assert.equal((await probe(dir, '["caido"]')).has.CAIDO_TOKEN, false);
+});
+await t("granting through a symlink records the real path: revoking by the real path works", async () => {
+  const p = fresh("real"), via = path.join(fresh("alias"), "proj"); fs.symlinkSync(p, via);
+  assert.equal((await run(ACLI, ["activate", "--project", via, "--runtime", "pi", "--caido"], TMP)).code, 0);
+  assert.equal((await probe(p, '["caido"]')).has.CAIDO_TOKEN, true);
+  assert.equal((await run(ACLI, ["activate", "--project", p, "--no-caido"], TMP)).code, 0);
+  assert.equal((await probe(via, '["caido"]', { PWD: via })).has.CAIDO_TOKEN, false);
+});
+await t("revocation: deactivate drops the opt-in, and a later plain activate doesn't bring it back", async () => {
+  const p = await project("--caido");
+  const d = await run(ACLI, ["deactivate", "--project", p], TMP); assert.match(d.out, /caido opt-in: revoked/);
+  assert.equal((await run(ACLI, ["activate", "--project", p, "--runtime", "pi"], TMP)).code, 0);
+  assert.equal((await probe(p, '["caido"]')).has.CAIDO_TOKEN, false);
+});
+await t("--caido with --no-caido contradict: refused, nothing changes", async () => {
+  const p = fresh("both");
+  const r = await run(ACLI, ["activate", "--project", p, "--caido", "--no-caido"], TMP);
+  assert.equal(r.code, 2); assert.match(r.err, /contradict/); assert.deepEqual(fs.readdirSync(p), []);
+});
+const STORE_BAD = [["not JSON", "{ nope"], ["a list", "[]"], ["null", "null"], ["wrong version", '{"version":2,"projects":{}}'], ["projects of the wrong type", '{"version":1,"projects":[]}']];
+await t("opt-in file corrupt or of the wrong type: fails closed with a safe message, no crash, and the file is left as it was", async () => {
+  const p = await project("--caido");
+  for (const [label, text] of STORE_BAD) await withStore(() => fs.writeFileSync(path.join(H, OPT_INS), text), async () => {
+    assert.equal((await probe(p, '["caido"]')).has.CAIDO_TOKEN, false, label);
+    hits = []; const r = await run(WCLI, ["projects"], p); noLeak(r);
+    assert.equal(r.code, 2, label); assert.match(r.err, /Caido opt-in file .* so no project gets CAIDO_TOKEN/, label); assert.doesNotMatch(r.err, /at file:|SyntaxError|Unexpected token/, label); assert.deepEqual(hits, [], label);
+    const s = await run(ACLI, ["status", "--project", p], TMP); assert.match(s.out, /caido opt-in: false/, label); assert.match(s.out, /Fix it, or move it away/, label);
+    assert.equal(fs.readFileSync(path.join(H, OPT_INS), "utf8"), text, label);
+  });
+});
+await t("opt-in file: an entry that isn't a grant grants nothing", async () => {
+  const p = await project(), key = fs.realpathSync(p);
+  for (const entry of [true, "yes", 1, null, [], {}, { granted: "true" }, { granted: 1 }]) await withStore(() => fs.writeFileSync(path.join(H, OPT_INS), JSON.stringify({ version: 1, projects: { [key]: entry } })), async () => {
+    assert.equal((await probe(p, '["caido"]')).has.CAIDO_TOKEN, false, JSON.stringify(entry));
+  });
+});
+await t("opt-in file unreadable (permission, or a directory in its place): fails closed, and the harness root is unaffected", async () => {
+  const p = await project("--caido"), f = path.join(H, OPT_INS);
+  const check = async (label) => {
+    assert.equal((await probe(p, '["caido"]')).has.CAIDO_TOKEN, false, label);
+    const r = await run(WCLI, ["projects"], p); noLeak(r); assert.equal(r.code, 2, label); assert.match(r.err, /can't be read \(E[A-Z]+\)/, label);
+    assert.equal((await probe(H, '["caido"]')).has.CAIDO_TOKEN, true, "harness root keeps working");
+  };
+  await withStore(() => { fs.unlinkSync(f); fs.mkdirSync(f); }, () => check("directory"), () => fs.rmdirSync(f));
+  if (process.platform !== "win32" && process.getuid() !== 0) await withStore(() => fs.chmodSync(f, 0o000), () => check("mode 000"), () => fs.chmodSync(f, 0o600));
+});
+await t("opt-in file unusable: grant and revocation refuse before touching anything; plain activate, status and deactivate still work", async () => {
+  const f = path.join(H, OPT_INS), kept = await project();
+  await withStore(() => fs.writeFileSync(f, "{ nope"), async () => {
+    const p = fresh("refused");
+    const g = await run(ACLI, ["activate", "--project", p, "--runtime", "pi", "--caido"], TMP);
+    assert.equal(g.code, 2); assert.match(g.err, /caido-config-invalid/); assert.deepEqual(fs.readdirSync(p), [], "nothing created");
+    assert.equal((await run(ACLI, ["activate", "--project", kept, "--no-caido"], TMP)).code, 2, "a revocation that can't be recorded must not look done");
+    const plain = await run(ACLI, ["activate", "--project", kept], TMP);
+    assert.equal(plain.code, 0, plain.err); assert.match(plain.out, /Fix it, or move it away/);
+    const d = await run(ACLI, ["deactivate", "--project", kept], TMP);
+    assert.equal(d.code, 0, d.err); assert.match(d.out, /opt-in may remain/); assert.ok(!fs.existsSync(path.join(kept, MARKER_NAME)));
+    assert.equal(fs.readFileSync(f, "utf8"), "{ nope", "the operator's file is not overwritten");
+  });
+});
+await t("plain activate and an unneeded revocation don't create the opt-in file", async () => {
+  await withStore(() => fs.rmSync(path.join(H, OPT_INS), { force: true }), async () => {
+    const p = await project();
+    assert.equal((await run(ACLI, ["activate", "--project", p, "--no-caido"], TMP)).code, 0);
+    assert.equal((await run(ACLI, ["deactivate", "--project", p], TMP)).code, 0);
+    assert.ok(!fs.existsSync(path.join(H, OPT_INS)));
+  });
+});
+await t("an invalid marker's denial points at the repair, not at --caido", async () => {
+  const d = fresh("bad"); fs.writeFileSync(path.join(d, MARKER_NAME), JSON.stringify({ hackbotHome: H, links: ["../x"], caido: true }));
+  const a = envAccess({ need: ["caido"], cwd: d, env: {} });
+  assert.deepEqual(a.allow, []); assert.match(a.caidoDenied, /--repair/);
 });
 await t("a relative hackbotHome grants no token, even if it resolves to this harness", async () => {
   const p = await project("--caido"), f = path.join(p, ".hackbot-activation.json");
@@ -179,6 +342,11 @@ await t("projects, opted-in project: integration keeps working and the token is 
 await t("projects, central harness: integration keeps working", async () => {
   hits = []; const r = await run(WCLI, ["projects"], H); noLeak(r);
   assert.ok(hits.length > 0);
+});
+await t("projects: names from the instance can't forge lines", async () => {
+  const evil = "p\u001b[31m\nAssociate one: forged"; fixtureData = { projects: [{ id: evil, name: evil, readOnly: false }] };
+  const r = await run(WCLI, ["projects"], H); fixtureData = {};
+  assert.match(r.out, /p\ufffd/, r.err.slice(0, 160)); assert.doesNotMatch(r.out, /[\u0000-\u0009\u000b-\u001f]|^Associate one: forged/m);
 });
 await t("projects, exported token: an explicit environment still works in a non-opted project", async () => {
   const p = await project(); hits = [];

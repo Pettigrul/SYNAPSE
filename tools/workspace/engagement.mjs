@@ -17,6 +17,8 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import path from "node:path";
 import { decideWhiteboxAccess, WHITEBOX_DIR } from "./whitebox-guard.mjs";
+import { MARKER, LINKS, RUNTIME_LINKS, readMarker, cleanForDisplay } from "../activation/activate.mjs";
+export { cleanForDisplay };
 
 export { WHITEBOX_DIR } from "./whitebox-guard.mjs";
 export const WORKSPACE_SCHEMA = 1;
@@ -51,8 +53,11 @@ export function sanitizeName(name) {
 function readManifest(engDir) {
   const p = path.join(engDir, MANIFEST_NAME);
   if (!fs.existsSync(p)) return null;
-  try { return JSON.parse(fs.readFileSync(p, "utf8")); }
+  let m;
+  try { m = JSON.parse(fs.readFileSync(p, "utf8")); }
   catch (e) { throw new WorkspaceError("bad-manifest", `corrupt manifest at ${p}: ${e.message}`); }
+  if (!m || typeof m !== "object" || Array.isArray(m)) throw new WorkspaceError("bad-manifest", `corrupt manifest at ${p}: not a JSON object`);
+  return m;
 }
 
 function writeManifest(engDir, manifest) {
@@ -330,8 +335,8 @@ export function associateCaidoProject(engagement, { projectId, projectName = nul
 // ---------------------------------------------------------------------------
 // Dynamic active-engagement selection (UX). A per-session POINTER persisted OUTSIDE
 // the .env lets the operator/agent switch engagements at runtime. Precedence when
-// resolving the active engagement: explicit SA_ENGAGEMENT override > session pointer
-// > NONE. It NEVER picks a nearest/first/last engagement — selection is always exact
+// resolving the active engagement: session pointer and SA_ENGAGEMENT must not disagree (refused, see
+// getActiveEngagement) > SA_ENGAGEMENT without a pointer, only where no project binds the context > session pointer > NONE. It NEVER picks a nearest/first/last engagement — selection is always exact
 // and explicit, and a pointer exists only for an unambiguous session (no shared default). The pointer only names the engagement; every scope/project/confinement/
 // authorization control stays exactly where it was (manifest + Bridge).
 // ---------------------------------------------------------------------------
@@ -339,36 +344,52 @@ export const STATE_ROOT_DIR = ".sa-state"; // under SA_ENGAGEMENT_ROOT; holds th
 
 // A session is always bound to where it runs, so a selection can never cross projects or clients:
 //  - activated project: stable prj-<hash> from its marker path; an explicit SA_SESSION_ID becomes <id>--prj-<hash>;
-//  - central harness (no marker, cwd exactly its root): its own prj-<hash>. A subdirectory doesn't count: a process in a
+//  - central harness (no marker, cwd exactly its root): its own prj-<hash>; an explicit SA_SESSION_ID becomes <id>--prj-<hash>,
+//    because this context also receives the central .env's selectors and token. A subdirectory doesn't count: a process in a
 //    project's linked dir (cwd=<project>/tools) is physically inside the harness and must not get the harness's selection;
+//  - a resource a project links to (tools/, skills/...), reached with no logical path back: nothing, even with SA_SESSION_ID,
+//    since every project's linked dir lands on the same place and the id alone would carry a selection between them;
 //  - anywhere else: only an explicit SA_SESSION_ID, bound to the enclosing repository or harness if any (<id>--repo-<hash>);
-//    otherwise null => NO selection and writes refuse. There is no
-//    shared default pointer (a legacy active.json is ignored, never read or deleted).
+//    in a plain directory it stays shared on purpose, as the name an automation gave its session. Otherwise null => NO selection
+//    and writes refuse. There is no shared default pointer (a legacy active.json is ignored, never read or deleted).
 const HARNESS_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const isWithin = (base, p) => p === base || p.startsWith(base + path.sep);
+function nearestMarker(start) {
+  for (let d = path.resolve(start); ; d = path.dirname(d)) {
+    try { fs.lstatSync(path.join(d, MARKER)); return d; } catch { /* lstat: a dangling link is still a marker to refuse, not a reason to walk up to a parent project */ }
+    if (fs.existsSync(path.join(d, ".git")) || path.dirname(d) === d) return null; // a nested repository is someone else's: never inherit its parent's selection
+  }
+}
 export function findActivatedProject(cwd = process.cwd(), env = process.env) {
   // The cwd is physical: inside a linked dir (cd tools) only the shell's PWD still shows the project.
   // The physical path comes second: a link from elsewhere into the project must still find its marker.
-  const starts = env.PWD && realpathLenient(env.PWD) === realpathLenient(cwd) ? [env.PWD, cwd] : [cwd];
-  for (const start of starts) {
-    for (let d = path.resolve(start); ; d = path.dirname(d)) {
-      if (fs.existsSync(path.join(d, ".hackbot-activation.json"))) return d;
-      if (fs.existsSync(path.join(d, ".git")) || path.dirname(d) === d) break; // a nested repository is someone else's: never inherit its parent's selection
-    }
+  const real = realpathLenient(cwd);
+  for (const start of env.PWD && realpathLenient(env.PWD) === real ? [env.PWD, cwd] : [cwd]) {
+    const d = nearestMarker(start);
+    // A logical path counts only inside the project or through a link into the harness. With pA/lnk -> pB/sub the process IS in pB.
+    if (d && (start === cwd || isWithin(realpathLenient(d), real) || isWithin(realpathLenient(HARNESS_ROOT), real))) return d;
   }
   return null;
 }
 const shortHash = (s) => createHash("sha256").update(s).digest("hex").slice(0, 12);
 const projectKey = (d) => `prj-${shortHash(realpathLenient(d))}`;
-function markerValid(d) {
-  try { const m = JSON.parse(fs.readFileSync(path.join(d, ".hackbot-activation.json"), "utf8")); return !!m && typeof m.hackbotHome === "string" && Array.isArray(m.links) && m.links.every((l) => typeof l === "string"); }
-  catch { return false; }
-}
 // kind: "project" | "invalid-marker" (nearest marker unreadable: never walk past it to a parent project) | "harness" | "none".
 export function resolveProjectContext({ env = process.env, cwd = process.cwd() } = {}) {
   const found = findActivatedProject(cwd, env);
-  if (found) return { kind: markerValid(found) ? "project" : "invalid-marker", dir: found };
+  if (found) return { kind: readMarker(found).state === "ok" ? "project" : "invalid-marker", dir: found };
   const H = realpathLenient(HARNESS_ROOT);
-  return realpathLenient(cwd) === H ? { kind: "harness", dir: H } : { kind: "none", dir: null };
+  if (realpathLenient(cwd) !== H) return { kind: "none", dir: null };
+  // spawn(cwd=<project>/tools/..) lands physically here while the inherited PWD still shows the project: not the harness's context.
+  // Only a parent's PWD can reveal it. A shell normalizes PWD and a scrubbed environment has none, so those remain undetectable.
+  const from = env.PWD && realpathLenient(env.PWD) !== H ? nearestMarker(env.PWD) : null;
+  return from ? { kind: "none", dir: null, strandedFrom: from } : { kind: "harness", dir: H };
+}
+// Physically under a harness resource that activation links into projects.
+function inLinkedHarnessDir(cwd) {
+  const rel = path.relative(realpathLenient(HARNESS_ROOT), realpathLenient(cwd));
+  if (!rel || rel === ".." || rel.startsWith(".." + path.sep) || path.isAbsolute(rel)) return false;
+  const top = rel.split(path.sep)[0];
+  return [...LINKS, ...Object.values(RUNTIME_LINKS).flat()].some((l) => l.split("/")[0] === top);
 }
 function enclosingRepo(cwd) {
   for (let d = realpathLenient(cwd); ; d = path.dirname(d)) {
@@ -379,11 +400,14 @@ function enclosingRepo(cwd) {
 export function resolveSessionId({ env = process.env, cwd = process.cwd() } = {}) {
   const ctx = resolveProjectContext({ env, cwd });
   if (env.SA_SESSION_ID) {
-    const raw = String(env.SA_SESSION_ID), safe = sanitizeName(raw).slice(0, 64); // bounded: it names a file
+    const raw = String(env.SA_SESSION_ID);
+    let safe; try { safe = sanitizeName(raw).slice(0, 64); } // bounded: it names a file
+    catch { throw new WorkspaceError("bad-name", "SA_SESSION_ID has no usable characters: use letters, digits or dashes"); }
     // Distinct ids must stay distinct after sanitizing, and an id can't take the form of a derived session (prj-<hash>).
     const id = safe === raw && !/(^|--)(prj|repo)-/.test(raw) ? safe : `${safe}-${shortHash(raw)}`;
-    if (ctx.kind === "project" || ctx.kind === "invalid-marker") return `${id}--${projectKey(ctx.dir)}`;
-    const repo = ctx.kind === "none" ? enclosingRepo(cwd) : null;
+    if (ctx.kind !== "none") return `${id}--${projectKey(ctx.dir)}`;
+    if (ctx.strandedFrom || inLinkedHarnessDir(cwd)) return null;
+    const repo = enclosingRepo(cwd);
     return repo ? `${id}--repo-${shortHash(repo)}` : id;
   }
   return ctx.kind === "project" || ctx.kind === "harness" ? projectKey(ctx.dir) : null;
@@ -391,7 +415,10 @@ export function resolveSessionId({ env = process.env, cwd = process.cwd() } = {}
 // Actionable refusal for a null session. Names no engagement: without context we cannot tell whose they are.
 export function noContextHelp({ env = process.env, cwd = process.cwd() } = {}) {
   const ctx = resolveProjectContext({ env, cwd });
-  const why = ctx.kind === "invalid-marker" ? `the activation marker in ${ctx.dir} is unreadable (re-run activate there)` : `${cwd} is not an activated project`;
+  const why = ctx.kind === "invalid-marker" ? `the activation marker in ${ctx.dir} is unreadable or invalid (see tools/activation/cli.mjs status --project ${ctx.dir}; repair with deactivate --project ${ctx.dir} --repair)`
+    : ctx.strandedFrom ? `this process is physically at the harness root, but its PWD is in the activated project ${ctx.strandedFrom} (a working directory like <project>/tools/.. does this)`
+    : env.SA_SESSION_ID && inLinkedHarnessDir(cwd) ? `${cwd} is inside the harness, where the linked dirs of every project land, so SA_SESSION_ID can't tell them apart here`
+    : `${cwd} is not an activated project`;
   return `no unambiguous project context: ${why}. Run from the activated project's root or the harness root, activate this one (tools/activation/cli.mjs activate --project <dir> --runtime <r>), or set SA_SESSION_ID for automation; commands that read an engagement also take --name <n>`;
 }
 
@@ -402,6 +429,10 @@ function activePointerPath(root, sessionId) {
 function readActivePointer(root, sessionId) {
   if (!sessionId) return null;
   try { return JSON.parse(fs.readFileSync(activePointerPath(root, sessionId), "utf8")); } catch { return null; }
+}
+// A pointer file exists for this session, usable or not: an env selector can't fall through a broken or stale one.
+function pointerExists(root, sessionId) {
+  try { return fs.existsSync(activePointerPath(root, sessionId)); } catch { return false; }
 }
 
 // The documented contract: engagement data lives OUTSIDE the harness, or in its git-ignored engagements/ (Layout A).
@@ -438,29 +469,67 @@ export function setActiveEngagement({ root, name, sessionId = null, operator = n
   return { ...sel, active: true, source: "session", switched, previous: (prev && prev.name) || null, requiresCleanContext: switched };
 }
 
+// For a refused SA_ENGAGEMENT: { kind: "mismatch" | "stale" | "unselected", override, selected }. "unselected" is a bound context with no selection.
+export function engagementConflictHelp({ kind = "mismatch", override, selected }) {
+  const name = cleanForDisplay(override);
+  if (kind === "unselected") return `SA_ENGAGEMENT=${name} is set, but this context belongs to a project and nothing was selected in it, so the variable selects nothing here: it could be left over from another client. To work on '${name}' here: use --name ${name}, or pass --name ${name} to one command (with an invalid marker, repair it first). If it is left over: unset it`;
+  const shown = cleanForDisplay(selected);
+  if (kind === "stale") return `SA_ENGAGEMENT=${name} is set, but this context's selection ${selected ? `'${shown}' no longer exists` : "can't be read"}, so nothing is selected. To work on '${name}' here: use --name ${name}, or pass --name ${name} to one command. If it is left over: unset it`;
+  return `SA_ENGAGEMENT=${name} conflicts with '${shown}', the engagement selected for this context, and nothing was done. To keep '${shown}': unset SA_ENGAGEMENT (and remove it from the central .env if it is there). To work on '${name}' here: use --name ${name}. One command can also pass --name <n>`;
+}
+// For an override with no selection behind it: a leftover export looks exactly like a deliberate one, so say where it came from.
+export function engagementOverrideNote(name) {
+  return `note: engagement '${cleanForDisplay(name)}' comes from SA_ENGAGEMENT in the environment, not from a selection made here. If that export is left over from another client, unset it.`;
+}
+
 export function clearActiveEngagement({ root, sessionId = null } = {}) {
   const p = activePointerPath(root, sessionId);
   try { fs.rmSync(p, { force: true }); } catch { /* ignore */ }
   return { cleared: true };
 }
 
-// Resolve the active engagement NAME: SA_ENGAGEMENT override > session pointer > none.
-// Returns { name, source: "env"|"session"|null, dir }. A missing/stale target yields NO
-// selection (never a fallback to another engagement); no session adds noContext: true.
-export function getActiveEngagement({ root = null, env = process.env, sessionId = null } = {}) {
+// The engagement a session pointer names, or null if none or stale.
+function pointedEngagement(root, sessionId) {
+  const ptr = root && sessionId ? readActivePointer(root, sessionId) : null;
+  if (!ptr || !ptr.name) return null;
+  try { return selectEngagement({ root, name: ptr.name }); } catch { return null; } // stale pointer → no selection
+}
+
+// Physically or logically tied to a project: there, an exported variable can't be told from one left over from another client, and writes
+// would follow it. The harness root is not: it belongs to no client, and its .env is the operator's own place for a selector.
+function contextIsBound({ env, cwd }) {
+  const ctx = resolveProjectContext({ env, cwd });
+  return ctx.kind === "project" || ctx.kind === "invalid-marker" || !!ctx.strandedFrom || inLinkedHarnessDir(cwd) || (ctx.kind === "none" && markerAbove(cwd));
+}
+// A nested repository inherits no selection from the project around it, and it doesn't turn a leftover export into one either.
+function markerAbove(cwd) {
+  for (let d = realpathLenient(cwd); ; d = path.dirname(d)) {
+    try { fs.lstatSync(path.join(d, MARKER)); return true; } catch { /* keep walking, past any .git */ }
+    if (path.dirname(d) === d) return false;
+  }
+}
+
+// Resolve the active engagement NAME. Returns { name, source: "env"|"session"|null, dir }. A missing/stale target yields NO
+// selection (never a fallback to another engagement); no session adds noContext: true. SA_ENGAGEMENT decides alone only where no project binds
+// the context: plain directories (its documented automation use) and the harness root. In a bound context it must match the selection,
+// and it never replaces one that disagrees, is stale or unreadable. Otherwise nothing is selected ({ conflict }), and --name or `use` settle it.
+export function getActiveEngagement({ root = null, env = process.env, sessionId = null, cwd = process.cwd() } = {}) {
   const override = env && env.SA_ENGAGEMENT ? String(env.SA_ENGAGEMENT) : null;
   if (override) {
-    try { const sel = selectEngagement({ root, name: override }); return { name: sel.name, source: "env", dir: sel.dir }; }
-    catch { return { name: override, source: "env", dir: null, unresolved: true }; }
+    const refused = (kind, selected = null) => ({ name: null, source: null, dir: null, conflict: { kind, override, selected } });
+    const pointed = pointedEngagement(root, sessionId);
+    if (!pointed && root && sessionId && pointerExists(root, sessionId)) { const p = readActivePointer(root, sessionId); return refused("stale", p && typeof p.name === "string" ? p.name : null); }
+    if (!pointed && contextIsBound({ env, cwd })) return refused("unselected");
+    let sel;
+    try { sel = selectEngagement({ root, name: override }); }
+    catch { return pointed ? refused("mismatch", pointed.name) : { name: cleanForDisplay(override), source: "env", dir: null, unresolved: true }; }
+    if (pointed && pointed.dir !== sel.dir) return refused("mismatch", pointed.name);
+    return { name: sel.name, source: "env", dir: sel.dir, confirmed: !!pointed };
   }
   if (!root) return { name: null, source: null, dir: null };
   if (!sessionId) return { name: null, source: null, dir: null, noContext: true };
-  const ptr = readActivePointer(root, sessionId);
-  if (ptr && ptr.name) {
-    try { const sel = selectEngagement({ root, name: ptr.name }); return { name: sel.name, source: "session", dir: sel.dir }; }
-    catch { return { name: null, source: null, dir: null }; } // stale pointer → no selection
-  }
-  return { name: null, source: null, dir: null };
+  const pointed = pointedEngagement(root, sessionId);
+  return pointed ? { name: pointed.name, source: "session", dir: pointed.dir } : { name: null, source: null, dir: null };
 }
 
 // Select the single active engagement for an investigation context. Validates the
@@ -470,7 +539,7 @@ export function selectEngagement({ root = null, name = null, dir = null, envProj
   let engDir = dir;
   if (!engDir) {
     if (!root) throw new WorkspaceError("bad-params", "selectEngagement needs (root + name) or dir");
-    if (!name) throw new WorkspaceError("no-active-engagement", "no engagement selected (set SA_ENGAGEMENT or pass a name)");
+    if (!name) throw new WorkspaceError("no-active-engagement", "no engagement selected (use --name <n>, or pass a name)");
     engDir = path.join(root, sanitizeName(name));
   }
   if (detectWorkspace(engDir) === "empty") throw new WorkspaceError("not-found", `no engagement at ${engDir}`);
@@ -480,7 +549,8 @@ export function selectEngagement({ root = null, name = null, dir = null, envProj
   const scopeValid = scopePresent ? validateScope(scopePath).ok : false;
   const { projectId, source } = resolveProjectId(eng, { envProjectId });
   return {
-    dir: engDir, name: eng.name || path.basename(engDir), modality: eng.modality || DEFAULT_MODALITY,
+    // Identity is the directory. A manifest's name is data: a copied folder would otherwise select, and then act on, the engagement it was copied from.
+    dir: engDir, name: path.basename(engDir), modality: eng.modality || DEFAULT_MODALITY,
     kind: eng.kind, caidoProjectId: projectId, caidoProjectSource: source,
     scopePath, scopePresent, scopeValid, statePaths: engagementStatePaths({ dir: engDir }),
     evidenceDir: engagementEvidenceDir({ dir: engDir }), // persistent AUDIT evidence home (created on first write)

@@ -14,7 +14,13 @@
 | `no unambiguous project context` | fora de projeto ativado e da raiz do harness (inclui subdiretório do harness e repositório aninhado), ou marcador ilegível | rode da raiz do projeto ou do harness, ative o projeto, ou defina `SA_SESSION_ID` para automação; comandos de leitura aceitam `--name` |
 | Repositório clonado dentro do projeto ativado recusa `use` | repositório aninhado não herda a seleção do projeto pai | rode da raiz do projeto, ou ative o repositório clonado se ele for o projeto de trabalho |
 | Seleção antiga sumiu após atualizar | ponteiro padrão removido; `SA_SESSION_ID` agora preso ao projeto | `use --name <n>` de novo; `active.json` antigo é ignorado e pode ser descartado |
-| `SA_ENGAGEMENT` do `.env` não vale em um projeto | seletor do `.env` central só vale na raiz do harness | exporte a variável ou use `use --name <n>` |
+| `SA_ENGAGEMENT=… conflicts` | variável diverge da seleção deste contexto; nada foi gravado | `unset SA_ENGAGEMENT`, ou `use --name <n>` |
+| `invalid-marker` | marcador malformado; nada foi alterado | `deactivate --project <dir> --repair`, depois `activate` |
+| `SA_ENGAGEMENT` não seleciona em um projeto | em projeto ele não seleciona, venha do `.env` ou de um export | `use --name <n>`, ou `--name <n>` no comando |
+| `SA_ENGAGEMENT` não seleciona em repositório aninhado | há um projeto ativado acima; o repositório não herda a seleção e a variável não a substitui | `--name <n>`, ou `SA_SESSION_ID` com `use --name <n>` |
+| `SA_ENGAGEMENT=… is set, but … selects nothing here` | variável sem seleção neste projeto; pode ter sobrado de outro cliente; nada foi gravado | `use --name <n>`, `--name <n>` ou `unset SA_ENGAGEMENT` |
+| `… no longer exists` | o ponteiro nomeia engagement removido | `use --name <n>` |
+| `activation marker … is a symbolic link` | o marcador é um link; nunca é seguido | `deactivate --project <dir> --repair`, depois `activate` |
 | `no active engagement selected` | nenhum engagement selecionado | `node tools/workspace/cli.mjs use --name <n>` (ou `/usar-engagement`) |
 | `no engagement named '<x>'` | nome não existe (match exato, sem adivinhar) | ver candidatos listados; `cli.mjs list` |
 | Trocar de engagement não "limpa" o chat | a troca **não** apaga o histórico do LLM | inicie uma **sessão limpa** após `use` numa troca |
@@ -32,7 +38,8 @@
 | Sintoma | Código | Ação |
 |---------|--------|------|
 | Sem config de instância | `caido-not-configured` | defina `CAIDO_BASE_URL`/`CAIDO_TOKEN` no `.env` |
-| `CAIDO_TOKEN withheld` | o projeto não optou pelo token central, ou seus links não estão íntegros | confira com `status`; o operador roda `activate --project <dir> --caido` (`--force` só depois de revisar um conflito), ou exporta só para o comando |
+| `CAIDO_TOKEN withheld` | o projeto não tem opt-in neste harness (movido, renomeado, copiado ou ativado antes do opt-in externo), ou seus links não estão íntegros | confira com `status`; se confiar no projeto, o operador roda `activate --project <dir> --caido`, ou exporta só para o comando |
+| `Caido opt-in file … so no project` | `.env.caido-opt-ins.json` ilegível ou inválido | corrija o arquivo, ou mova-o e repita `--caido` nos projetos |
 | Engagement sem projeto | `caido-no-project` | `cli.mjs associate --name <n> --project-id <uuid>` |
 | Projeto corrente ≠ associado | `caido-project-mismatch` | selecione o projeto certo na instância ou reassocie (`--force`) |
 | `projects` indisponível (`available:false`) | instância local sem `@cloud` | use o UUID visível na UI / `currentProject` |

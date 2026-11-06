@@ -45,7 +45,7 @@
 
 - **Autopilot sobre alvo real:** NOT RUN. Validado só em lab sintético (Claude Code em S4; Pi, cadeia de 2 tarefas seguras até o gate Class A).
 - **Pi:** VALIDATED REAL em dados sintéticos, não interativo. TUI, `/trust`, alvos reais, Caido e Windows: NOT RUN.
-- **Antigravity:** PARCIAL, **não homologado**. Skills, `AGENTS.md` e a abertura do dispatcher verificados; seguir o dispatcher não está verificado, comandos de shell sem interação são negados e `/investigar` não é protegido pela Bridge.
+- **Antigravity:** PARCIAL, **não homologado**. Skills, `AGENTS.md` e a abertura do dispatcher por `/security-auditor` verificados; seguir o dispatcher não está verificado, comandos de shell sem interação são negados e `/investigar` não é protegido pela Bridge.
 - **Operações sob aprovação de fato executadas:** NOT RUN em qualquer runtime.
 - **Windows corporativo sem symlink:** ativação local (P2) limitada — ver [runtimes.md](runtimes.md).
 - **Workflows nativos Caido (F5b):** pós-MVP/V2.

@@ -16,5 +16,5 @@ node tools/workspace/cli.mjs list
 ```
 
 - Os engagements podem estar **fora do repositório** (base em `SA_ENGAGEMENT_ROOT`). O harness é único.
-- `*` marca o engagement ativo (resolvido por `SA_ENGAGEMENT` > ponteiro de sessão). Não infira seleção.
+- `*` marca o engagement ativo (resolvido pelo ponteiro da sessão, com o qual `SA_ENGAGEMENT` tem de coincidir; `SA_ENGAGEMENT` sozinho só fora de projeto; conflito é recusado). Não infira seleção.
 - Se `SA_ENGAGEMENT_ROOT` não estiver definido, o CLI devolve erro acionável — repasse-o literalmente.

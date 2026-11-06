@@ -19,7 +19,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseEnv } from "node:util";
 import { resolveProjectContext } from "../workspace/engagement.mjs";
-import { statusActivation } from "../activation/activate.mjs";
+import { statusActivation, caidoGuidance } from "../activation/activate.mjs";
 
 export const ENV_FILE = ".env";
 const COMMON_KEYS = new Set(["CAIDO_BASE_URL", "SA_ENGAGEMENT_ROOT", "SA_BROWSER_CHANNEL", "SA_STRIDE_ENABLED", "PI_AGENT_HOME", "PI_CODING_AGENT_DIR", "ANTIGRAVITY_HOME"]);
@@ -70,22 +70,20 @@ export function loadProjectEnv({ root = projectRoot(), file = ENV_FILE, target =
   return { loaded: true, path: full, applied, skipped, keys: Object.keys(parsed), withheld }; // keys = NOMES apenas
 }
 
-// O que este contexto pode receber do .env central. `need: ["caido"]` é declarado só pelo comando que usa o token:
-// raiz do harness sempre; projeto ativado somente com opt-in para ESTE harness (caminho absoluto no marcador, todos os links
-// íntegros); fora disso, nunca. O marcador fica no projeto: quem conhece o caminho do harness pode forjá-lo. Reduz acidente, não é barreira.
-function optedIn(projectDir) {
-  const s = statusActivation({ projectDir });
-  if (!s.caido || !s.healthy) return false;
-  if (!path.isAbsolute(s.hackbotHome)) return false;
-  try { return fs.realpathSync(s.hackbotHome) === fs.realpathSync(projectRoot()); } catch { return false; }
-}
+// O que este contexto pode receber do .env central. `need: ["caido"]` é declarado só pelo comando que usa o token: raiz do harness
+// sempre; projeto ativado somente com a decisão do operador em CAIDO_OPT_INS (fora do projeto, por caminho real), marcador apontando
+// para ESTE harness e links íntegros; fora disso, nunca. Nada no marcador autoriza. Protege contra o CONTEÚDO do projeto: um
+// processo com shell deste usuário lê o .env e o arquivo de opt-in diretamente.
 export function envAccess({ need = [], env = process.env, cwd = process.cwd() } = {}) {
   const ctx = resolveProjectContext({ env, cwd });
   const allow = ctx.kind === "harness" ? [...PROJECT_BOUND_KEYS] : [];
   let caidoDenied = null;
   if (need.includes("caido")) {
-    if (ctx.kind === "harness" || (ctx.kind === "project" && optedIn(ctx.dir))) allow.push("CAIDO_TOKEN");
-    else caidoDenied = ctx.kind === "project" ? `project ${ctx.dir} has no valid opt-in for this harness, or its links aren't intact (check tools/activation/cli.mjs status); the operator can run: tools/activation/cli.mjs activate --project ${ctx.dir} --caido` : "this directory is neither the harness root nor an opted-in activated project";
+    if (ctx.kind === "harness") allow.push("CAIDO_TOKEN");
+    else if (ctx.kind === "project") {
+      const s = statusActivation({ projectDir: ctx.dir, home: projectRoot() });
+      if (s.activated && s.caido && s.healthy) allow.push("CAIDO_TOKEN"); else caidoDenied = s.activated ? caidoGuidance(s) : s.help || "its activation marker is gone";
+    } else caidoDenied = ctx.kind === "invalid-marker" ? statusActivation({ projectDir: ctx.dir, home: projectRoot() }).help : "this directory is neither the harness root nor an opted-in activated project";
   }
   return { allow, caidoDenied };
 }

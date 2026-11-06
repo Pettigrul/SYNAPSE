@@ -6,13 +6,13 @@
 ## Situação real
 
 **VALIDATED REAL em dados sintéticos, com conclusão instável** (Pi 1.4.0, `openai-codex/gpt-6-luna --thinking low`, Linux, `--mode json`
-não interativo). Na árvore final, a passada completa de aceitação (10 execuções, cerca de US$ 0,05) deu **12/14**: S4 e S12 FAIL, porque o agente
-parou antes de concluir, sem violar nenhum limite. Passadas anteriores na mesma rodada deram 14/14 e 13/14. **O resultado varia
-entre passadas**: em 6 medições, S4 passou 4 e S12 passou 3; nenhuma enviou requisição, inventou engagement ou mudou a seleção. Em uma repetição, pedido a isso, o agente **tentou** o GET
-no host fora de escopo pela ferramenta da Bridge, que recusou por parâmetro inválido, antes do Scope Guard e sem rede (
-[relatório 48](../../architecture-review/48-runtime-security-hardening.md)).
-Uma passada anterior falhou em S12, porque o agente adivinhou um caminho de CLI inexistente; por isso o `AGENTS.md`
-atual nomeia as CLIs.
+não interativo). A última passada completa de aceitação (10 execuções, cerca de US$ 0,04) deu **12/14** (S5 e S12 FAIL); as anteriores, na mesma rodada, 13/14 e 11/14. **O resultado varia entre
+passadas.** O Pi não interrompe nada: o modelo encerra antes de concluir, em cerca de 1/4 a 1/3 dos prompts compostos (amostras pequenas), e as variáveis
+testadas não explicam essa taxa; `SKILL.md`, políticas, modelo e nível de raciocínio não foram variados. Nenhuma chamada registrada foi classificada
+como executada contra o host fora de escopo (detecção textual nos logs, sem captura de rede); tentativas chegaram a acontecer antes da correção do `AGENTS.md`, rejeitadas antes do Scope Guard ([relatório 49](../../architecture-review/49-pi-reliability-stabilization.md)).
+
+**O que isso significa na prática:** confira o que foi feito, não só a resposta final; numa execução o agente afirmou ter gravado um arquivo sem nenhuma chamada de escrita. Em pedidos com várias partes, o agente pode entregar parte delas.
+No autopilot, se ele parar após a primeira tarefa, peça que atualize o `toDoList`: `next` não avança sozinho.
 
 Cobertos: ativação, leitura do dispatcher, criar/selecionar engagement, escopo, bootstrap + idempotência,
 `/skill:engagement-atual`, troca de modo, tarefa Copilot com efeito em disco, cadeia Autopilot sobre 2 tarefas seguras
@@ -126,8 +126,8 @@ ainda presa a este projeto: o mesmo valor em outro projeto não enxerga esta sel
 
 Fora de um projeto ativado e da raiz do harness não há seleção: `use`, `clear` e os comandos que dependem do engagement
 ativo **recusam, sem gravar nada**, e dizem como resolver. Isso inclui subdiretório do harness e repositório Git aninhado no
-projeto. O antigo ponteiro padrão compartilhado foi removido. Um `SA_ENGAGEMENT` exportado no shell continua valendo em
-qualquer projeto, por ser um ato explícito: não o deixe exportado ao trocar de cliente.
+projeto. O antigo ponteiro padrão compartilhado foi removido. Em projeto, um `SA_ENGAGEMENT` exportado não seleciona: sem ponteiro igual, o Pi recusa todos os
+contextos (`engagement-conflict`) e os comandos recusam sem gravar. Use `use --name <n>`.
 
 ## Configurar modos
 
@@ -167,6 +167,9 @@ a variáveis de ambiente **não** são expandidas.
 }
 ```
 
+Um contexto de outro engagement é recusado a cada chamada (`engagement-mismatch`): id `eng:<n>`, campo `engagement`, `evidenceDir`
+sob o root ou bloco `caido` com `baseUrl`, `token` ou `projectId` sem seleção ou vínculo correspondente. Um id sem nenhum desses sinais não pode ser atribuído a um engagement e continua aceito, salvo se a própria seleção estiver em conflito.
+
 ### Fronteiras: o que cada camada controla
 
 | Camada | Controla | Não controla |
@@ -188,7 +191,8 @@ fato, rode o Pi em usuário, contêiner ou VM sem acesso ao harness `.env` e use
 |---------|-------|------|
 | Skills ou ferramentas do Bridge não aparecem | projeto sem *trust* | em projeto revisado, `pi -a` ou `/trust`; senão, o `-na` com caminhos explícitos |
 | `activate` lista `.pi/extensions` ou outro item | o projeto traz recursos próprios | revise antes de confiar; ver o risco acima |
-| `CAIDO_TOKEN withheld` | projeto sem opt-in | o operador roda `activate --project <dir> --caido`, ou exporta só para o comando |
+| `CAIDO_TOKEN withheld` | projeto sem opt-in, ou movido, ou ativado antes do opt-in externo | o operador roda `activate --project <dir> --caido`, se confiar no projeto, ou exporta só para o comando |
+| `engagement-mismatch` | contexto de outro engagement | selecione o engagement certo com `use` ou use o contexto dele |
 | `no unambiguous project context` | fora de projeto ativado | rode do projeto, ative-o ou defina `SA_SESSION_ID` |
 | Modelo inesperado | padrão do Pi | passe `--provider` e `--model` |
 | `no-trusted-context` | `SECAUDIT_BRIDGE_CONTEXTS` ausente ou inválido | corrija o JSON |

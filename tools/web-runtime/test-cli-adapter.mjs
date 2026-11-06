@@ -128,7 +128,8 @@ await t("stateful ops stay refused: no path for /investigar here", async () => {
 });
 await t("pointer and skill don't claim a protection the runtime lacks", () => {
   const agents = fs.readFileSync(path.join(H, "AGENTS.md"), "utf8");
-  assert.match(agents, /never claim that protection/);
+  assert.match(agents, /Scope Guard, Execution Context and Approval Gate don't cover shell commands or any other tool outside the harness, so never claim their protection for those\./);
+  assert.doesNotMatch(agents, /still apply|when unsure/);
   const skill = fs.readFileSync(path.join(H, ".claude", "skills", "investigar", "SKILL.md"), "utf8");
   assert.match(skill, /Sem `securityauditor_invoke`/); assert.match(skill, /\*\*não\*\* está protegido pela Bridge/);
   const adapter = fs.readFileSync(path.join(H, "adapters", "antigravity.md"), "utf8");

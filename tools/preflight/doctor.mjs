@@ -7,8 +7,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { collectEnv } from "./preflight.mjs";
-import { statusActivation, auditRuntimeConfig } from "../activation/activate.mjs";
-import { resolveProjectContext, resolveSessionId } from "../workspace/engagement.mjs";
+import { statusActivation, auditRuntimeConfig, cleanForDisplay } from "../activation/activate.mjs";
+import { resolveProjectContext, resolveSessionId, noContextHelp, engagementConflictHelp } from "../workspace/engagement.mjs";
 
 // Discoverable operational skills = dirs under <root>/.claude/skills that carry a SKILL.md. INFORMATIONAL only
 // (a troubleshooting aid for R5 — it does NOT prove Claude Code's live slash-command discovery, which happens
@@ -28,7 +28,7 @@ export function runDoctor(env) {
     node: env.node, platform: env.platform, windows: !!env.windows, root: env.root,
     runtimes: Object.entries(env.runtimes).filter(([, v]) => v).map(([k]) => k),
     adapterDocs: env.adapters,
-    activation: (() => { const s = statusActivation({ projectDir: process.cwd() }); return s.activated ? `${s.projectDir} (declared: ${s.runtimes.join(", ")}; healthy: ${s.healthy})` : "(cwd is not an activated project)"; })(),
+    activation: (() => { const s = statusActivation({ projectDir: process.cwd() }); return s.activated ? `${cleanForDisplay(s.projectDir)} (declared: ${cleanForDisplay(s.runtimes.join(", "))}; healthy: ${s.healthy}; caido opt-in: ${s.caido})` : s.corrupt ? s.help : "(cwd is not an activated project)"; })(),
     sessionContext: (() => { const c = resolveProjectContext(); let s = null; try { s = resolveSessionId(); } catch { /* unusable SA_SESSION_ID: no session */ } return `${c.kind}${c.dir ? ` ${c.dir}` : ""}; session ${s || "(none)"}`; })(),
     runtimeConfigReview: (() => { const f = auditRuntimeConfig({ projectDir: resolveProjectContext().dir || process.cwd() }); return f.length ? f.map((x) => x.path).join(", ") : "(no project-supplied runtime config found)"; })(),
     bridgeByRuntime: "pi: native tools (extension, operator contexts); antigravity: no stateful adapter, adapters/cli.mjs http.* only; claude-code: no native tool path (see adapters/)",
@@ -39,7 +39,7 @@ export function runDoctor(env) {
     workspaceTool: env.workspace.tool,
     engagementRoot: env.workspace.engagementRoot || "(none selected)",
     activeEngagement: env.engagement && env.engagement.selected ? `${env.engagement.name} (via ${env.engagement.source || "?"})${env.engagement.managed ? "" : " — NOT managed/found"}` : "(none — select with: workspace cli use --name <n>)",
-    caidoProjectBinding: env.engagement && env.engagement.caidoProjectId ? `${env.engagement.caidoProjectId} (via ${env.engagement.caidoProjectSource})` : "(none — associate a project)",
+    caidoProjectBinding: env.engagement && env.engagement.caidoProjectId ? `${cleanForDisplay(env.engagement.caidoProjectId)} (via ${env.engagement.caidoProjectSource})` : "(none — associate a project)",
     browser: env.browser.playwright ? `playwright-core${env.browser.channel ? ` + channel ${env.browser.channel}` : " (channel auto-detect at runtime)"}` : "none (HTTP fallback)",
     caidoInstanceConfig: ["baseUrl", "token"].filter((k) => env.caido[k]),
     evidenceDir: env.evidence.dir
@@ -57,8 +57,9 @@ function hints(env) {
   if (!env.browser.playwright) h.push("No playwright-core — visual Browser Runtime unavailable; HTTP fallback only. Chrome/Edge must be installed; the runtime never downloads a browser.");
   if (!env.caido.baseUrl || !env.caido.token) h.push("Caido instance not fully configured — set CAIDO_BASE_URL / CAIDO_TOKEN (store the PAT in an env var or an ACL-restricted user file, never in the repo).");
   if (!env.workspace.engagementRoot) h.push("No engagement base dir — set SA_ENGAGEMENT_ROOT to a directory OUTSIDE this repo.");
-  if (env.workspace.engagementRoot && env.engagement && env.engagement.noContext) h.push("No project context here — run from an activated project or the harness root, or set SA_SESSION_ID; a selection never carries over between projects.");
-  else if (env.workspace.engagementRoot && !(env.engagement && env.engagement.selected)) h.push("No active engagement — select one for this session: node tools/workspace/cli.mjs use --name <name> (list: cli.mjs list). SA_ENGAGEMENT still works as an explicit override for automation.");
+  if (env.engagement && env.engagement.conflict) h.push(engagementConflictHelp(env.engagement.conflict));
+  else if (env.workspace.engagementRoot && env.engagement && env.engagement.noContext) h.push(`No project context here: ${noContextHelp()}. A selection never carries over between projects.`);
+  else if (env.workspace.engagementRoot && !(env.engagement && env.engagement.selected)) h.push("No active engagement — select one for this session: node tools/workspace/cli.mjs use --name <name> (list: cli.mjs list). SA_ENGAGEMENT selects only outside an activated project.");
   if (env.engagement && env.engagement.selected && !env.engagement.caidoProjectId) h.push(`Active engagement '${env.engagement.name}' has no Caido project — associate one: node tools/workspace/cli.mjs associate --name ${env.engagement.name} --project-id <id> (discover with: cli.mjs projects).`);
   if (env.evidence.source === "engagement" && !env.evidence.writable) h.push(`Engagement dir not writable — cannot create ${env.evidence.dir}; fix permissions on the engagement directory.`);
   if (!env.evidence.dir) h.push("No evidence destination — persistent evidence (screenshots, captures) requires an active engagement; select one: node tools/workspace/cli.mjs use --name <name>.");

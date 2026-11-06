@@ -41,7 +41,8 @@ tools/  references/  workflows/  skills/(KB)  policies/  agents/  reports/  SKIL
 
 Por runtime declarado, além desses: `pi` → `AGENTS.md` e `.pi/settings.json`; `antigravity` → `AGENTS.md` e
 `.agents/skills` (diretório de links: as 13 skills e `security-auditor` → `SKILL.md`, sem cópia). Tudo dentro do projeto; nada
-global. `--caido` registra no marcador o opt-in ao `CAIDO_TOKEN` central. `activate` e `status` listam o que o projeto traz além
+global. `--caido` registra o opt-in ao `CAIDO_TOKEN` central fora do projeto, ao lado do `.env`.
+`activate` recusa projeto cujo caminho real é o harness ou um diretório global, e `.claude`, `.pi` ou `.agents` que sejam links para fora do projeto. Marcador inválido: `deactivate --project <dir> --repair` remove só os links deste harness, preserva seus arquivos e renomeia o marcador para `.invalid`. `activate` e `status` listam o que o projeto traz além
 dos links (`.pi/extensions`, `.agents/hooks.json`, `AGENTS.override.md`…): informam, não bloqueiam.
 
 - **Zero duplicação:** a KB e o dispatcher são **linkados**, nunca copiados.
@@ -87,10 +88,10 @@ Níveis: **D**=documentado · **I**=implementado · **T**=testado deterministica
 |---------|----------------------------|------------------------------|-----------------|-------|
 | **Claude Code** | `.claude/skills` symlinked (mecanismo sancionado pelo adapter) | sim (symlinks; CLIs rodam do projeto) | `--mcp` linka `.mcp.json` **se existir** no central (não há hoje) | **I + T + R** (aceitação S4, [41](../architecture-review/41-s4-real-acceptance.md)); não reexecutado ao vivo na rodada mais recente |
 | **Pi Agent** | **por projeto:** `.pi/settings.json` linkado, carregado com `pi -a` (ou `/trust`) em projeto revisado; sem revisão, `pi -na` com caminhos explícitos; skills como `/skill:<nome>`. Sem instalação global | lê `AGENTS.md`, `SKILL.md` e `skills` linkados; extensão do Bridge via settings | n/a nesta rodada | **I + T + R em dados sintéticos** (Pi 1.4.0, `--mode json`); TUI, `/trust`, alvos reais = **NOT RUN** |
-| **Antigravity** | **por projeto:** `.agents/skills` linkado; 13/13 e `security-auditor` listados por `agy -p /skills` | `AGENTS.md` carregado e `SKILL.md` aberto (cenário 2 PASS, com evidência no log); seguir o dispatcher não verificado | n/a nesta rodada | **I + T + R parcial** (agy 1.5.1); comando de shell sem interação = **BLOCKED**; interativo = **NOT RUN** |
+| **Antigravity** | **por projeto:** `.agents/skills` linkado; 13/13 e `security-auditor` listados por `agy -p /skills` | `AGENTS.md` carregado; `SKILL.md` aberto por `/security-auditor`, com evidência no log, e pelo prompt natural na maioria das execuções, não em todas; seguir o dispatcher não verificado | n/a nesta rodada | **I + T + R parcial** (agy 1.5.1); comando de shell sem interação = **BLOCKED**; interativo = **NOT RUN** |
 
-> **Honestidade:** R no Pi vale para dados sintéticos: última passada completa 12/14 (S4 e S12 FAIL, sem
-> violar limites), e o resultado varia entre passadas. No Antigravity, cenários 3-11 estão BLOCKED sem interação, e abrir o `SKILL.md` não prova que o
+> **Honestidade:** R no Pi vale para dados sintéticos: última passada completa 12/14 (S5 e S12 FAIL; as anteriores, 13/14 e 11/14; sem
+> violação detectada), e o resultado varia entre passadas. No Antigravity, cenários 3-11 estão BLOCKED sem interação, e abrir o `SKILL.md` não prova que o
 > dispatcher é seguido. Guias: [Pi](operator/pi-agent.md),
 > [Antigravity](operator/antigravity.md).
 
@@ -116,7 +117,7 @@ Níveis: **D**=documentado · **I**=implementado · **T**=testado deterministica
 - Um **projeto ativado não autoriza** testar nenhum alvo; a ativação **não** seleciona engagement
   silenciosamente.
 - **Precedência de config:** ambiente > `<central>/.env`, sem segredos nem seletores em projeto sem opt-in ([configuração](operator/configuration.md); `SA_SKIP_ENV_FILE=1` ignora o `.env`). Engagement
-  ativo: `SA_ENGAGEMENT` (override) > ponteiro de sessão > nenhum. Projeto Caido: **manifesto** do engagement.
+  ativo: ponteiro de sessão > nenhum; em projeto, `SA_ENGAGEMENT` não seleciona, só confirma. Projeto Caido: **manifesto** do engagement.
 
 ## 18.9 Isolamento (preservado) & limitação honesta
 

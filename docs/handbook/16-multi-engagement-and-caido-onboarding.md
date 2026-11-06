@@ -14,7 +14,7 @@
 
 - **Harness** instalado no seu próprio repositório (NÃO é duplicado por engagement).
 - **Diretório-base dos engagements FORA do repo**, apontado por `SA_ENGAGEMENT_ROOT`.
-- **Um subdiretório por engagement** sob esse base; `SA_ENGAGEMENT` seleciona o ativo.
+- **Um subdiretório por engagement** sob esse base; `use` seleciona o ativo (`SA_ENGAGEMENT` só fora de projeto).
 - **Um projeto Caido associado por engagement** (gravado em `<engagement>/.engagement.json`).
 
 ```
@@ -92,7 +92,7 @@ node tools/workspace/cli.mjs select                # confere binding + mostra o 
 
 **8. Configurar `.env`.** Veja `.env.example` — persista apenas `CAIDO_BASE_URL`, `CAIDO_TOKEN` (instância)
 e `SA_ENGAGEMENT_ROOT` (base). O engagement ativo é escolhido por sessão via `cli.mjs use` (§16.4.1);
-`SA_ENGAGEMENT` é **override opcional** (automação) e `CAIDO_PROJECT_ID` é compat opcional (prefira
+`SA_ENGAGEMENT` é **seletor opcional** para automação fora de projeto e `CAIDO_PROJECT_ID` é compat opcional (prefira
 `associate`).
 
 **9. Primeiro Preflight + smoke.**
@@ -126,8 +126,7 @@ A escolha do engagement ativo é **dinâmica por sessão** — não exige editar
 | `cli.mjs active` | mostra o ativo resolvido e a origem (`session`/`env`) |
 | `cli.mjs clear` | limpa a seleção da sessão |
 
-**Precedência de resolução:** `SA_ENGAGEMENT` (override explícito, p/ automação/não-interativo) **>**
-ponteiro de sessão (`use`, gravado em `<root>/.sa-state/`) **>** **nenhum**. Na **ausência de seleção**,
+**Precedência de resolução:** `--name` **>** ponteiro de sessão (`use`, gravado em `<root>/.sa-state/`), com o qual `SA_ENGAGEMENT` tem de coincidir **>** `SA_ENGAGEMENT` sozinho (automação, só em diretório comum ou na raiz do harness) **>** **nenhum**. Ponteiro obsoleto ou ilegível mais a variável é conflito, sem queda para a variável. Na **ausência de seleção**,
 descoberta/listagem funcionam, mas operações dependentes de engagement são **recusadas** com mensagem
 acionável (nunca escolhe primeiro/último/parecido). `SA_SESSION_ID` (opcional) isola o ponteiro entre
 sessões concorrentes no mesmo root.
@@ -205,7 +204,7 @@ vazios ansiosos).
 - Variáveis persistentes via `setx`: `setx SA_ENGAGEMENT_ROOT "%USERPROFILE%\engagements"`,
   `setx CAIDO_BASE_URL "http://127.0.0.1:8080"`, `setx CAIDO_TOKEN "<token>"`. O engagement ativo é
   escolhido por sessão: `node tools\workspace\cli.mjs use --name <n>` (não precisa de `setx SA_ENGAGEMENT`;
-  use `setx SA_ENGAGEMENT` apenas como override para automação/tarefas agendadas).
+  use `setx SA_ENGAGEMENT` apenas para automação fora de projeto ativado).
 - Caminhos usam `\`; o confinamento (`assertInsideEngagement`) e o `.env` nativo funcionam em ambos os SOs.
 
 ## 16.8 Testes
@@ -214,7 +213,7 @@ vazios ansiosos).
   troca · projeto ausente/incompatível · leitura cruzada recusada · replay de outro projeto recusado ·
   persistência isolada/confinada · path traversal + **symlink** · sem carry-over de estado anterior ·
   config global×específica · compat com workspace legado · **seleção dinâmica** (explícita, ausência,
-  nome inexistente/ambíguo sem fuzzy, troca+contexto, override `SA_ENGAGEMENT`, ponteiro obsoleto sem
+  nome inexistente/ambíguo sem fuzzy, troca+contexto, conflito de `SA_ENGAGEMENT`, ponteiro obsoleto sem
   fallback, isolamento preservado, listagem sem seleção) · **evidências por engagement** (dirs distintos,
   seleção dirige o dir, escrita cruzada/symlink recusada, persistência após reinício, gate no Bridge sem
   engagement = `evidence-no-engagement`, confinamento = `evidence-path-escape`).

@@ -10,37 +10,39 @@
 // no operation and grants no capability.
 
 import { getMode, setMode, clearMode, modeEnvelope, MODES, DEFAULT_MODE, BRIDGE_CAPABILITIES, ModeError } from "./mode.mjs";
-import { getActiveEngagement, selectEngagement, resolveSessionId, noContextHelp, WorkspaceError } from "../workspace/engagement.mjs";
+import { getActiveEngagement, selectEngagement, resolveSessionId, noContextHelp, engagementConflictHelp, engagementOverrideNote, cleanForDisplay, WorkspaceError } from "../workspace/engagement.mjs";
 import { loadScopedEnv } from "../preflight/env-loader.mjs";
 
 loadScopedEnv();
 
 const rootOf = () => process.env.SA_ENGAGEMENT_ROOT || null;
 const sessionOf = () => resolveSessionId();
-function die(msg, code = 2) { console.error(`error: ${msg}`); process.exit(code); }
+function die(msg, code = 2) { console.error(`error: ${cleanForDisplay(msg)}`); process.exit(code); }
 
 function resolveActive() {
   const root = rootOf();
   const active = getActiveEngagement({ root, sessionId: sessionOf() });
-  if (!active.name) return { root, engagement: null, noContext: !!active.noContext };
+  if (!active.name) return { root, engagement: null, noContext: !!active.noContext, conflict: active.conflict || null };
   const sel = selectEngagement({ root, name: active.name, envProjectId: process.env.CAIDO_PROJECT_ID || null });
-  return { root, engagement: { dir: sel.dir, name: sel.name }, sel, source: active.source };
+  return { root, engagement: { dir: sel.dir, name: sel.name }, sel, source: active.source, unconfirmedOverride: active.source === "env" && !active.confirmed };
 }
 
 function printStatus() {
-  const { engagement, sel, source, noContext } = resolveActive();
+  const { engagement, sel, source, noContext, conflict, unconfirmedOverride } = resolveActive();
   if (!engagement) {
     console.log(`mode: ${DEFAULT_MODE} (default) — NO active engagement`);
+    if (conflict) console.log(`  ${engagementConflictHelp(conflict)}`);
     if (noContext) console.log(`  ${noContextHelp()}`);
     console.log(`  mode belongs to an engagement session; select one: node tools/workspace/cli.mjs use --name <n>`);
     console.log(`  (read-only status works without a selection; mode cannot be SET without one)`);
     return 0;
   }
+  if (unconfirmedOverride) console.error(engagementOverrideNote(engagement.name));
   const m = getMode({ engagement, sessionId: sessionOf() });
   console.log(`mode: ${m.mode}  (${m.source}${m.stale ? "; previous engagement's mode ignored" : ""})`);
   console.log(`  engagement    ${engagement.name}  (via ${source})`);
-  console.log(`  session       ${sessionOf() || "(none: SA_ENGAGEMENT override)"}`);
-  console.log(`  caido project ${sel.caidoProjectId ? `${sel.caidoProjectId} (${sel.caidoProjectSource})` : "NONE — associate one"}`);
+  console.log(`  session       ${sessionOf() || "(none: selected by SA_ENGAGEMENT)"}`);
+  console.log(`  caido project ${sel.caidoProjectId ? `${cleanForDisplay(sel.caidoProjectId)} (${sel.caidoProjectSource})` : "NONE — associate one"}`);
   console.log(`  scope.md      ${sel.scopePresent ? (sel.scopeValid ? "present & valid" : "present but INVALID") : "ABSENT"}`);
   console.log(`  evidence dir  ${sel.evidenceDir}`);
   const e = m.envelope;
@@ -63,11 +65,13 @@ function printStatus() {
 }
 
 function setActive(mode) {
-  const { engagement, noContext } = resolveActive();
+  const { engagement, noContext, conflict, unconfirmedOverride } = resolveActive();
+  if (conflict) die(`cannot set mode '${mode}': ${engagementConflictHelp(conflict)}`);
   if (noContext) die(`cannot set mode '${mode}': ${noContextHelp()}`);
+  if (unconfirmedOverride) console.error(engagementOverrideNote(engagement.name));
   if (!engagement) die(`cannot set mode '${mode}': no active engagement (mode belongs to an engagement session) — run: node tools/workspace/cli.mjs use --name <n>`);
   const r = setMode({ engagement, sessionId: sessionOf(), mode, operator: process.env.USER || null });
-  console.log(`mode set: ${r.mode}${r.switched ? ` (was ${r.previous})` : ""}  [engagement ${r.engagementId}, session ${sessionOf() || "default"}]`);
+  console.log(`mode set: ${r.mode}${r.switched ? ` (was ${cleanForDisplay(r.previous)})` : ""}  [engagement ${r.engagementId}, session ${sessionOf() || "default"}]`);
   if (mode === "autopilot") {
     console.log(`\n⚠ Autopilot is SUPERVISED. Selecting it grants NO capability and authorizes NO target.`);
     console.log(`  Every active operation still requires Scope Guard + Execution Context capabilities + the`);
@@ -82,7 +86,7 @@ function main() {
   if (process.argv.includes("--help") || process.argv.includes("-h")) { console.log("Usage: cli.mjs status|copilot|autopilot|clear"); return 0; } // never change mode for --help
   if (cmd === "status") return printStatus();
   if (MODES.includes(cmd)) return setActive(cmd);
-  if (cmd === "clear") { const { engagement } = resolveActive(); if (!engagement) die("no active engagement"); clearMode({ engagement, sessionId: sessionOf() }); console.log(`mode cleared → default (${DEFAULT_MODE})`); return 0; }
+  if (cmd === "clear") { const { engagement, conflict } = resolveActive(); if (conflict) die(engagementConflictHelp(conflict)); if (!engagement) die("no active engagement"); clearMode({ engagement, sessionId: sessionOf() }); console.log(`mode cleared → default (${DEFAULT_MODE})`); return 0; }
   die(`unknown command: ${cmd} (status|${MODES.join("|")}|clear)`, 3);
 }
 

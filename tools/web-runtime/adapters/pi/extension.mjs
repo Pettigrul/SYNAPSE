@@ -12,17 +12,85 @@
 // TRUST: the Execution Context (scope, allowed capabilities, approvals) is produced by
 // `resolveContext` — an ADAPTER-provided, operator-controlled source — never by the LLM. The
 // agent only names an opaque investigationId; it cannot invent scope or authorization.
+//
+// BINDING: the agent names the id, so a contexts file with several clients would let it pick any of them. `makeFileContextSource`
+// refuses a context with any sign of an engagement unless the selection here matches it, on every call, so a later `use` counts. Signs: eng: id,
+// engagement field, evidenceDir under the root, Caido block with baseUrl, token or project (a project must be the selected engagement's own binding). A context with none of them
+// stays usable: nothing ties it to a client, and the operator who wrote it answers for it. Refuses mismatches; it is not a sandbox.
+
+import fs from "node:fs";
+import path from "node:path";
+import { getActiveEngagement, resolveSessionId, selectEngagement, sanitizeName, confineWithin, cleanForDisplay, engagementConflictHelp, noContextHelp } from "../../../workspace/engagement.mjs";
+import { loadScopedEnv } from "../../../preflight/env-loader.mjs";
 
 export const TOOL_NAMES = Object.freeze({
   capabilities: "securityauditor_capabilities",
   invoke: "securityauditor_invoke",
 });
 
+// Every engagement this context claims, as directories: the same sanitizing that selects them. All must match, so one sign can't vouch for another.
+function claimedEngagements(investigationId, ctx, root) {
+  const claims = [];
+  if (ctx.engagement != null) claims.push(sanitizeName(ctx.engagement));
+  if (String(investigationId).startsWith("eng:")) claims.push(sanitizeName(String(investigationId).slice(4)));
+  if (root && typeof ctx.evidenceDir === "string") {
+    try { const rel = path.relative(confineWithin(root), confineWithin(root, ctx.evidenceDir)); if (rel) claims.push(rel.split(path.sep)[0]); }
+    catch { /* outside the root: says nothing about an engagement */ }
+  }
+  return claims;
+}
+
 /**
- * @param {{ defineTool:Function, Type:any, bridge:any, resolveContext?:Function }} deps
+ * Execution Context source. SECAUDIT_BRIDGE_CONTEXTS, fixed when Pi starts, points at a JSON file:
+ *   { "<investigationId>": { "scope": {...}, "allowedCapabilities": [...], "limits": {...}, "approvals": [...], "engagement": "<optional name>" } }
+ * The operator writes it. The Bridge tools can't change it, but the agent's shell can unless the OS keeps it out of reach. Absent file => null => tools refuse.
+ */
+export function makeFileContextSource() {
+  const readContext = (investigationId) => {
+    const file = process.env.SECAUDIT_BRIDGE_CONTEXTS;
+    if (!file) return null;
+    try {
+      const all = JSON.parse(fs.readFileSync(file, "utf8"));
+      return all && typeof all === "object" && Object.hasOwn(all, investigationId) && all[investigationId] ? all[investigationId] : null;
+    } catch { return null; }
+  };
+  async function resolveContext(investigationId) {
+    const ctx = readContext(investigationId);
+    if (!ctx) return null;
+    const { engagement: _bound, ...execution } = ctx;
+    return execution;
+  }
+  async function guardContext(investigationId) {
+    const ctx = readContext(investigationId);
+    if (!ctx) return null; // resolveContext refuses what isn't provisioned
+    const seen = { ...process.env }; loadScopedEnv({ target: seen }); // the root may live only in .env; a scratch target keeps Pi's env, which its bash inherits, as it was
+    const root = seen.SA_ENGAGEMENT_ROOT || null;
+    let sessionId = null; try { sessionId = resolveSessionId({ env: seen }); } catch { /* unusable SA_SESSION_ID: no selection */ }
+    const active = getActiveEngagement({ root, env: seen, sessionId });
+    if (active.conflict) return { code: "engagement-conflict", message: engagementConflictHelp(active.conflict) };
+    const id = cleanForDisplay(investigationId), selectedDir = active.dir ? path.basename(active.dir) : null;
+    let claims;
+    try { claims = claimedEngagements(investigationId, ctx, root); } catch { return { code: "engagement-mismatch", message: `context ${id} names an unusable engagement` }; }
+    const ctxProject = ctx.caido && ctx.caido.projectId ? String(ctx.caido.projectId) : null;
+    const ctxCaido = !!(ctx.caido && (ctx.caido.baseUrl || ctx.caido.token || ctxProject)); // baseUrl or token alone still reach the instance (caido.health, caido.projects)
+    if ((claims.length || ctxCaido) && !selectedDir) return { code: "no-active-engagement", message: `context ${id} belongs to ${claims.length ? `engagement '${cleanForDisplay(claims[0])}'` : ctxProject ? `Caido project ${cleanForDisplay(ctxProject)}` : "a Caido instance"}, and no engagement is selected here (${sessionId ? "tools/workspace/cli.mjs use --name <n>" : noContextHelp()})` };
+    const other = claims.find((c) => c !== selectedDir);
+    if (other) return { code: "engagement-mismatch", message: `context ${id} belongs to engagement '${cleanForDisplay(other)}', not to the selected '${selectedDir}'` };
+    if (ctxProject) {
+      // The agent picks the id, so a Caido project is reachable only as the selected engagement's own binding. No binding means no match.
+      const bound = selectEngagement({ root, name: selectedDir }).caidoProjectId;
+      if (bound !== ctxProject) return { code: "engagement-mismatch", message: `context ${id} uses Caido project ${cleanForDisplay(ctxProject)}, but the selected '${selectedDir}' is ${bound ? `bound to ${cleanForDisplay(bound)}` : "not bound to any (tools/workspace/cli.mjs associate)"}` };
+    }
+    return null;
+  }
+  return { resolveContext, guardContext };
+}
+
+/**
+ * @param {{ defineTool:Function, Type:any, bridge:any, resolveContext?:Function, guardContext?:Function }} deps
  * @returns {(pi:any)=>void} a Pi ExtensionFactory
  */
-export function createSecurityAuditorExtension({ defineTool, Type, bridge, resolveContext } = {}) {
+export function createSecurityAuditorExtension({ defineTool, Type, bridge, resolveContext, guardContext } = {}) {
   if (typeof defineTool !== "function" || !Type || typeof Type.Object !== "function") {
     throw new Error("createSecurityAuditorExtension requires { defineTool, Type } from the Pi runtime");
   }
@@ -89,6 +157,9 @@ export function createSecurityAuditorExtension({ defineTool, Type, bridge, resol
       operationId: Type.Optional(Type.String({ description: "Optional id so this call can be cancelled individually." })),
     }),
     async execute(toolCallId, params, signal, _onUpdate, toolCtx) {
+      // Before ensureOpen and on every call: an investigation already open must not outlive a change of engagement.
+      const denied = guardContext ? await guardContext(params.investigationId) : null;
+      if (denied) return toToolResult({ ok: false, op: params.op, investigationId: params.investigationId, error: denied });
       const open = await ensureOpen(params.investigationId, toolCtx);
       if (!open.ok) return toToolResult({ ok: false, op: params.op, investigationId: params.investigationId, error: open.error });
       const env = await bridge.invoke(

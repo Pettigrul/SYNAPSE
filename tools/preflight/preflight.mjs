@@ -12,7 +12,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadEngagement, resolveProjectId, getActiveEngagement, resolveSessionId, validateScope, EVIDENCE_DIR } from "../workspace/engagement.mjs";
+import { loadEngagement, resolveProjectId, getActiveEngagement, resolveSessionId, validateScope, engagementConflictHelp, cleanForDisplay, EVIDENCE_DIR } from "../workspace/engagement.mjs";
 
 export const PREFLIGHT_SCHEMA = 1;
 export const VERDICTS = Object.freeze(["READY", "DEGRADED", "BLOCKED"]);
@@ -79,13 +79,13 @@ function resolveEvidenceConfig(env, engagement) {
 }
 
 // Resolve the ACTIVE engagement offline, deriving the bound Caido project from its manifest. Selection
-// precedence: SA_ENGAGEMENT override > per-session pointer (.sa-state) > none. Global CAIDO_PROJECT_ID is
+// precedence: per-session pointer (.sa-state), which SA_ENGAGEMENT must match > SA_ENGAGEMENT alone, only where no project binds the context > none. Global CAIDO_PROJECT_ID is
 // only a single-engagement compat fallback. Deterministic; never picks an engagement implicitly.
 function resolveActiveEngagement(env) {
   const root = env.SA_ENGAGEMENT_ROOT || null;
   let sessionId = null; try { sessionId = resolveSessionId({ env }); } catch { /* unusable SA_SESSION_ID: reported as no selection, not a crash */ }
   const active = getActiveEngagement({ root, env, sessionId });
-  const base = { selected: !!active.name, noContext: !!active.noContext, source: active.source, root, name: active.name || null, dir: active.dir || null, managed: false, caidoProjectId: null, caidoProjectSource: null };
+  const base = { selected: !!active.name, noContext: !!active.noContext, conflict: active.conflict || null, source: active.source, root, name: active.name || null, dir: active.dir || null, managed: false, caidoProjectId: null, caidoProjectSource: null };
   if (!active.name || !active.dir) return base; // none, or an unresolved override/stale pointer
   try {
     const eng = loadEngagement({ dir: active.dir });
@@ -132,20 +132,21 @@ export const CHECKS = Object.freeze({
   caidoProject: (e) => {
     const eng = e.engagement || {};
     if (eng.selected && eng.caidoProjectId && eng.caidoProjectSource === "engagement")
-      return C("caidoProject", "Caido project binding", "ok", `engagement '${eng.name}' → project ${eng.caidoProjectId}`);
+      return C("caidoProject", "Caido project binding", "ok", `engagement '${eng.name}' → project ${cleanForDisplay(eng.caidoProjectId)}`);
     if (eng.selected && eng.caidoProjectId && eng.caidoProjectSource === "env-compat")
       return C("caidoProject", "Caido project binding", "degraded", `engagement '${eng.name}' unbound; using CAIDO_PROJECT_ID compat (bind it: workspace associate)`);
     if (eng.selected && !eng.caidoProjectId)
       return C("caidoProject", "Caido project binding", "missing", `engagement '${eng.name}' has no associated Caido project — run: workspace associate --name ${eng.name} --project-id <id>`);
     if (e.caido && e.caido.projectIdCompat)
       return C("caidoProject", "Caido project binding", "degraded", "no active engagement; CAIDO_PROJECT_ID compat only (single-engagement)");
-    return C("caidoProject", "Caido project binding", "missing", "no active engagement (set SA_ENGAGEMENT) and no project associated");
+    return C("caidoProject", "Caido project binding", "missing", "no active engagement (use --name <n>) and no project associated");
   },
   workspace: (e) => {
     if (!e.workspace.tool) return C("workspace", "Pentest Engagement Workspace", "error", "tools/workspace missing");
     if (!e.workspace.engagementRoot) return C("workspace", "Pentest Engagement Workspace", "missing", "no SA_ENGAGEMENT_ROOT (base dir for engagements)");
     const eng = e.engagement || {};
-    if (!eng.selected) return C("workspace", "Pentest Engagement Workspace", "degraded", "engagement root set; no active engagement (set SA_ENGAGEMENT)");
+    if (eng.conflict) return C("workspace", "Pentest Engagement Workspace", "error", engagementConflictHelp(eng.conflict));
+    if (!eng.selected) return C("workspace", "Pentest Engagement Workspace", "degraded", "engagement root set; no active engagement (use --name <n>)");
     if (!eng.managed) return C("workspace", "Pentest Engagement Workspace", "degraded", `active engagement '${eng.name}' not found/managed under the root`);
     return C("workspace", "Pentest Engagement Workspace", "ok", `active engagement '${eng.name}'`);
   },
