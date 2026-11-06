@@ -205,7 +205,16 @@ na seção 13.
 
 ## 18. Commit e push
 
-Registrados no commit seguinte, com o hash publicado e a confirmação do remoto.
+| Item | Valor |
+|---|---|
+| Commit | `e4cd7509d7a75c596d2b1accd8f31fe34560c161`, sobre `697a9c8` |
+| Push | `origin/main`, sem force; hash local igual ao remoto |
+| Visibilidade | **PRIVATE**, confirmada pela API após o push |
+| Gate de sensíveis | Limpo, com uma exceção explícita: `.agents/skills`, link rastreado para `.claude/skills` |
+| Segredos | Sem achado real no índice; ocorrências em docs e código são placeholders ou exemplos públicos |
+| Clone limpo | 328 arquivos, sem `.env`, engagements ou dependências; validador 127/127; 31/31 suítes; ativação, `agy -p /skills` e desativação sem resíduo |
+
+Este registro entrou no commit seguinte.
 
 ## 19. Próximos passos
 
