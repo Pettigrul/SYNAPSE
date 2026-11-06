@@ -395,7 +395,7 @@ SYNAPSE/
 ├── .claude/                     # Skills do Claude Code (dirs reais) + hooks + settings
 ├── docs/
 │   ├── handbook/                # Handbook do operador + engenharia
-│   └── architecture-review/     # Revisões históricas 00–45 e archive/ (rastreabilidade)
+│   └── architecture-review/     # Revisões históricas 00–46 e archive/ (rastreabilidade)
 └── engagements/                 # Dados locais de engagement (git-ignored)
 ```
 
@@ -438,7 +438,7 @@ node tools/preflight/test-preflight.mjs         # preflight / doctor
 | Índice da documentação (atual x histórica) | [`docs/README.md`](docs/README.md) |
 | Monitor de history ao vivo do Caido | [`docs/handbook/10-caido-live-history-monitor.md`](docs/handbook/10-caido-live-history-monitor.md) |
 | Roadmap de capacidades | [`docs/architecture-review/08-capability-roadmap.md`](docs/architecture-review/08-capability-roadmap.md) |
-| Revisões históricas (00–45) | [`docs/architecture-review/`](docs/architecture-review/) |
+| Revisões históricas (00–46) | [`docs/architecture-review/`](docs/architecture-review/) |
 
 <p align="center"><img src="images/assets/divider_synapse_chip.png" alt="———" width="100%" /></p>
 
