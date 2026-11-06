@@ -1,14 +1,14 @@
 <!--
-  SYNAPSE — README (en)
-  Formerly "SecurityAuditor / HackBot". The legacy name is preserved in the historical architecture
-  reports (docs/architecture-review/) and in stable technical identifiers
-  (skill name `security-auditor`, `SA_*` variables, `.hackbot/` state directory) for compatibility.
+  SYNAPSE — README (pt-BR)
+  Antigo "SecurityAuditor / HackBot". O nome legado é preservado nos relatórios históricos de arquitetura
+  (docs/architecture-review/) e em identificadores técnicos estáveis
+  (nome da skill `security-auditor`, variáveis `SA_*`, diretório de estado `.hackbot/`), por compatibilidade.
 
-  Status legend (the project's honest vocabulary):
-  IMPLEMENTED = exists in code · TESTED OFFLINE = deterministic test executed ·
-  VALIDATED REAL = proven on a real runtime/instance · PARTIAL = only part of the dimension is proven ·
-  BLOCKED = stopped by a missing requirement or a refusal · NOT RUN = not executed in this phase ·
-  PLANNED = on the roadmap, not implemented.
+  Legenda de status (o vocabulário honesto do projeto):
+  IMPLEMENTED = existe no código · TESTED OFFLINE = teste determinístico executado ·
+  VALIDATED REAL = comprovado em runtime/instância real · PARTIAL = só parte da dimensão está comprovada ·
+  BLOCKED = parado por requisito ausente ou recusa · NOT RUN = não executado nesta fase ·
+  PLANNED = no roadmap, não implementado.
 -->
 
 <p align="center">
@@ -28,533 +28,533 @@
 </p>
 
 <p align="center">
-  <a href="#overview">Overview</a> ·
-  <a href="#core-concepts">Concepts</a> ·
-  <a href="#capabilities">Capabilities</a> ·
-  <a href="#architecture">Architecture</a> ·
-  <a href="#installation">Installation</a> ·
-  <a href="#quick-start">Quick Start</a> ·
-  <a href="#operating-modes">Modes</a> ·
-  <a href="#caido-integration">Caido</a> ·
-  <a href="#testing-and-validation">Testing</a> ·
-  <a href="#troubleshooting">Troubleshooting</a> ·
-  <a href="#documentation">Docs</a> ·
+  <a href="#visão-geral">Visão Geral</a> ·
+  <a href="#conceitos-centrais">Conceitos</a> ·
+  <a href="#capacidades">Capacidades</a> ·
+  <a href="#arquitetura">Arquitetura</a> ·
+  <a href="#instalação">Instalação</a> ·
+  <a href="#início-rápido">Início Rápido</a> ·
+  <a href="#modos-de-operação">Modos</a> ·
+  <a href="#integração-com-o-caido">Caido</a> ·
+  <a href="#testes-e-validação">Testes</a> ·
+  <a href="#solução-de-problemas">Solução de Problemas</a> ·
+  <a href="#documentação">Documentação</a> ·
   <a href="#roadmap">Roadmap</a>
 </p>
 
-> **SYNAPSE is a runtime-agnostic harness.** It equips an AI agent with a curated offensive knowledge
-> base, a strict phased-approval authorization model, a deterministic capability layer and a persistent
-> engagement workspace, so that the agent and its human operator conduct a real assessment together,
-> under supervision. The priority runtimes are **Pi Agent** and **Google Antigravity**; Claude Code is
-> supported as an additional runtime. Validation differs per runtime: see the
-> [compatibility matrix](#runtime-compatibility-matrix).
+> **O SYNAPSE é um harness agnóstico de runtime.** Ele equipa um agente de IA com uma base de conhecimento
+> ofensiva curada, um modelo rigoroso de autorização por aprovação em fases, uma camada determinística de
+> capacidades e um workspace persistente de engagement, para que o agente e seu operador humano conduzam juntos
+> uma avaliação real, sob supervisão. Os runtimes prioritários são **Pi Agent** e **Google Antigravity**; o Claude Code é
+> suportado como runtime adicional. A validação difere por runtime: veja a
+> [matriz de compatibilidade](#matriz-de-compatibilidade-de-runtimes).
 
 <p align="center"><img src="images/assets/divider_neural.png" alt="———" width="100%" /></p>
 
-## Overview
+## Visão Geral
 
 <img src="images/assets/agent_operator.png" alt="" align="right" width="230" />
 
-SYNAPSE turns a generic AI agent into a disciplined penetration-testing operator. Where a scanner runs
-fixed signatures, SYNAPSE gives the agent **judgment with guardrails**: it routes a request to the right
-technique in a 127-entry base, enforces an authorization gate before any active operation, keeps every
-artifact inside an isolated engagement and records provenance for each finding.
+O SYNAPSE transforma um agente de IA genérico em um operador disciplinado de testes de intrusão. Onde um scanner executa
+assinaturas fixas, o SYNAPSE dá ao agente **julgamento com limites**: encaminha cada pedido à técnica certa
+em uma base de 127 entradas, exige um gate de autorização antes de qualquer operação ativa, mantém todo
+artefato dentro de um engagement isolado e registra a proveniência de cada finding.
 
-**Why it exists.** Autonomous offensive tools are dangerous when they act without scope, approval or
-auditability. The SYNAPSE thesis is **supervised autonomy**: the agent may read, analyze, plan and chain
-authorized steps on its own, but every state-changing or outward-facing action stops at an explicit gate.
-The operator stays in control; the agent removes the grunt work.
+**Por que existe.** Ferramentas ofensivas autônomas são perigosas quando agem sem escopo, aprovação ou
+auditabilidade. A tese do SYNAPSE é a **autonomia supervisionada**: o agente pode ler, analisar, planejar e encadear
+passos autorizados por conta própria, mas toda ação que muda estado ou sai para o exterior para em um gate explícito.
+O operador mantém o controle; o agente elimina o trabalho braçal.
 
 **Harness vs. scanner.**
 
 | | Scanner | SYNAPSE |
 |---|---|---|
-| Logic | Fixed signatures | Agent reasoning over a curated KB |
-| Scope | Target list | Engagement + Scope Guard, per-project isolation |
-| Actions | Fire and forget | Phased approval; gated active operations |
-| Output | Raw findings | Findings with provenance + Investigation Records |
-| Runtime | Standalone binary | Portable across AI runtimes |
+| Lógica | Assinaturas fixas | Raciocínio do agente sobre uma KB curada |
+| Escopo | Lista de alvos | Engagement + Scope Guard, isolamento por projeto |
+| Ações | Dispara e esquece | Aprovação em fases; operações ativas sob gate |
+| Saída | Findings brutos | Findings com proveniência + Investigation Records |
+| Runtime | Binário independente | Portável entre runtimes de IA |
 
-**Roles.** The **operator** authorizes the scope, approves active operations and owns the verdict. The
-**agent** discovers surface, analyzes traffic, proposes and chains authorized steps and drafts evidence,
-always honest about what is IMPLEMENTED, TESTED OFFLINE, VALIDATED REAL or NOT RUN.
+**Papéis.** O **operador** autoriza o escopo, aprova operações ativas e é dono do veredito. O
+**agente** descobre superfície, analisa tráfego, propõe e encadeia passos autorizados e redige evidências,
+sempre honesto sobre o que está IMPLEMENTED, TESTED OFFLINE, VALIDATED REAL ou NOT RUN.
 
 <p align="center"><img src="images/assets/divider_synapse_chip.png" alt="———" width="100%" /></p>
 
-## Core Concepts
+## Conceitos Centrais
 
 <img src="images/assets/knowledge_graph.png" alt="" align="right" width="230" />
 
-| Concept | What it is |
+| Conceito | O que é |
 |---|---|
-| **Engagement** | An isolated assessment workspace: nine numbered buckets, `scope.md`, state (`.hackbot/`), evidence, audit log. Several engagements coexist; one is active per session. |
-| **Scope** | `scope.md` declares the in-scope hosts. The **Scope Guard** validates every active target against it (Rule 0). A host's presence in captured traffic is **never** authorization to act. |
-| **Workspace** | `tools/workspace/engagement.mjs`: bootstrap, selection, confinement (symlink-safe), task parsing, resume. Every write is confined inside the active engagement. |
-| **Dispatcher** | The Markdown skill (`SKILL.md`) that routes keywords/flows to KB entries, agents and tools. The single entry point; exactly one exists. |
-| **Flows** | `workflows/flows-*.md`: scope, recon, report, intake, proxy, agents, status. Caido investigation: `references/flows-caido-investigation.md`. |
-| **Agents** | 15 KB categories in `agents/` (host-inventory, web-testing, code-review, forge, …). |
-| **Skills** | Entry skills exposed by the runtime (e.g. `/iniciar-pentest`, `/investigar`, `/modo`). Discovered locally per runtime, never installed globally. |
-| **KB** | 112 techniques (T) + 15 forge blueprints (B) = **127** entries, each with real payloads, tier and escalation fields. |
-| **Capabilities** | The only way to touch the outside world, through the **Capability Bridge**. Class R (read) vs. Class A (active, gated). |
-| **Execution Context** | `{investigationId, scope, allowedCapabilities}` opened per investigation; the Bridge honors nothing outside it. |
-| **Copilot** | **Deterministic, zero-LLM**, read-only analysis of captured traffic. The same name designates the session's default **mode** (`/modo`). |
-| **Autopilot** | Supervised loop that chains authorized steps from the engagement's task list; stops at every gate. |
-| **Caido** | Read-only analysis of HTTP History + supervised, gated active operations (Replay/Findings). |
-| **Evidence / Investigation Records** | Capture with preserved provenance; a Record is only written with a grounded hypothesis against an authorized target. |
+| **Engagement** | Workspace isolado de avaliação: nove buckets numerados, `scope.md`, estado (`.hackbot/`), evidências, log de auditoria. Vários engagements coexistem; um fica ativo por sessão. |
+| **Escopo** | `scope.md` declara os hosts em escopo. O **Scope Guard** valida contra ele todo alvo ativo (Regra 0). A presença de um host no tráfego capturado **nunca** é autorização para agir. |
+| **Workspace** | `tools/workspace/engagement.mjs`: bootstrap, seleção, confinamento (seguro contra symlinks), leitura de tarefas, retomada. Toda escrita fica confinada ao engagement ativo. |
+| **Dispatcher** | A skill em Markdown (`SKILL.md`) que encaminha palavras-chave e flows para entradas da KB, agentes e ferramentas. Ponto de entrada único; só existe um. |
+| **Flows** | `workflows/flows-*.md`: scope, recon, report, intake, proxy, agents, status. Investigação Caido: `references/flows-caido-investigation.md`. |
+| **Agentes** | 15 categorias da KB em `agents/` (host-inventory, web-testing, code-review, forge, …). |
+| **Skills** | Skills de entrada expostas pelo runtime (por exemplo, `/iniciar-pentest`, `/investigar`, `/modo`). Descobertas localmente por runtime, nunca instaladas globalmente. |
+| **KB** | 112 técnicas (T) + 15 blueprints de forge (B) = **127** entradas, cada uma com payloads reais, tier e campos de escalonamento. |
+| **Capacidades** | O único meio de tocar o mundo externo, pela **Capability Bridge**. Classe R (leitura) vs. Classe A (ativa, sob gate). |
+| **Execution Context** | `{investigationId, scope, allowedCapabilities}` aberto por investigação; a Bridge não aceita nada fora dele. |
+| **Copilot** | Análise **determinística, sem LLM** e somente leitura do tráfego capturado. O mesmo nome designa o **modo** padrão da sessão (`/modo`). |
+| **Autopilot** | Loop supervisionado que encadeia passos autorizados da lista de tarefas do engagement; para em todo gate. |
+| **Caido** | Análise somente leitura do HTTP History + operações ativas supervisionadas e sob gate (Replay/Findings). |
+| **Evidências / Investigation Records** | Captura com proveniência preservada; um Record só é escrito com hipótese fundamentada contra um alvo autorizado. |
 
 <p align="center"><img src="images/assets/divider_code.png" alt="———" width="100%" /></p>
 
-## Capabilities
+## Capacidades
 
 <img src="images/assets/security_testing.png" alt="" align="right" width="230" />
 
-Status is reported honestly according to the project's readiness matrix
-([`docs/handbook/operator/readiness.md`](docs/handbook/operator/readiness.md)). VALIDATED REAL below names the
-runtime it was proven on; per-runtime detail is in the [compatibility matrix](#runtime-compatibility-matrix).
+O status segue com honestidade a matriz de prontidão do projeto
+([`docs/handbook/operator/readiness.md`](docs/handbook/operator/readiness.md)). VALIDATED REAL abaixo indica o
+runtime em que foi comprovado; o detalhe por runtime está na [matriz de compatibilidade](#matriz-de-compatibilidade-de-runtimes).
 
-| Capability | Status | Notes |
+| Capacidade | Status | Notas |
 |---|---|---|
-| Bootstrap / resume / multi-engagement | IMPLEMENTED · TESTED OFFLINE · **VALIDATED REAL** (Claude Code; Pi on synthetic data) | 9 buckets + docs, idempotent, isolated |
-| Scope Guard / phased approval | IMPLEMENTED · TESTED OFFLINE · **VALIDATED REAL** (Claude Code); Pi: Bridge out-of-scope refusal only, on synthetic data | Rule 0 enforced even with bulk approval |
-| Capability Bridge (Class R / Class A) | IMPLEMENTED · TESTED OFFLINE · `http.inspect` **VALIDATED REAL** (Pi, loopback fixture) | Envelope contract; per-action approval. Approval-gated ops actually executed: **NOT RUN** |
-| Recon and surface mapping | IMPLEMENTED · TESTED OFFLINE | `flows-recon`, `flows-scope` |
-| Web / API testing KB | IMPLEMENTED · TESTED OFFLINE | `agents/web-testing` (15), `agents/web-inventory` (8) |
-| Browser runtime | IMPLEMENTED · TESTED OFFLINE | Playwright-core, real navigation on loopback |
-| Caido HTTP History (read-only) | IMPLEMENTED · TESTED OFFLINE · **VALIDATED REAL** (Claude Code) | 21 requests read live; annotated by scope |
-| Caido Copilot (deterministic) | IMPLEMENTED · TESTED OFFLINE | zero-LLM endpoint/parameter analysis |
-| Supervised active Caido (Replay/Findings) | IMPLEMENTED · TESTED OFFLINE · real **NOT RUN** | Gated; out-of-scope blocked even if approved |
-| Autopilot (supervised chaining) | IMPLEMENTED · TESTED OFFLINE · **VALIDATED REAL** (Claude Code; Pi on synthetic data) | 2 autonomous transitions + stop at the gate |
-| Copilot (operator-driven execution) | IMPLEMENTED · TESTED OFFLINE · **VALIDATED REAL** (Claude Code; Pi on synthetic data) | read → analyze → persist → present |
-| Investigation Records + evidence | IMPLEMENTED · TESTED OFFLINE | provenance preserved |
-| Forge micro-tools | IMPLEMENTED · TESTED OFFLINE | 15 blueprints |
-| Whitebox intelligence (segregated) | IMPLEMENTED (F1) · rest **PLANNED** | GitHub/Confluence/STRIDE ingestion on the roadmap |
-| Reporting pipeline | IMPLEMENTED (templates/libraries) · in-Caido plugin **PLANNED** | `reports/` |
+| Bootstrap / retomada / multi-engagement | IMPLEMENTED · TESTED OFFLINE · **VALIDATED REAL** (Claude Code; Pi em dados sintéticos) | 9 buckets + docs, idempotente, isolado |
+| Scope Guard / aprovação em fases | IMPLEMENTED · TESTED OFFLINE · **VALIDATED REAL** (Claude Code); Pi: só a recusa de fora de escopo na Bridge, em dados sintéticos | Regra 0 vale mesmo com aprovação em lote |
+| Capability Bridge (Classe R / Classe A) | IMPLEMENTED · TESTED OFFLINE · `http.inspect` **VALIDATED REAL** (Pi, fixture em loopback) | Contrato de envelope; aprovação por ação. Operações sob aprovação de fato executadas: **NOT RUN** |
+| Recon e mapeamento de superfície | IMPLEMENTED · TESTED OFFLINE | `flows-recon`, `flows-scope` |
+| KB de testes web / API | IMPLEMENTED · TESTED OFFLINE | `agents/web-testing` (15), `agents/web-inventory` (8) |
+| Runtime de navegador | IMPLEMENTED · TESTED OFFLINE | Playwright-core, navegação real em loopback |
+| Caido HTTP History (somente leitura) | IMPLEMENTED · TESTED OFFLINE · **VALIDATED REAL** (Claude Code) | 21 requisições lidas ao vivo; anotadas por escopo |
+| Caido Copilot (determinístico) | IMPLEMENTED · TESTED OFFLINE | análise de endpoints e parâmetros sem LLM |
+| Caido ativo supervisionado (Replay/Findings) | IMPLEMENTED · TESTED OFFLINE · real **NOT RUN** | Sob gate; fora de escopo é bloqueado mesmo se aprovado |
+| Autopilot (encadeamento supervisionado) | IMPLEMENTED · TESTED OFFLINE · **VALIDATED REAL** (Claude Code; Pi em dados sintéticos) | 2 transições autônomas + parada no gate |
+| Copilot (execução conduzida pelo operador) | IMPLEMENTED · TESTED OFFLINE · **VALIDATED REAL** (Claude Code; Pi em dados sintéticos) | ler → analisar → persistir → apresentar |
+| Investigation Records + evidências | IMPLEMENTED · TESTED OFFLINE | proveniência preservada |
+| Microferramentas de forge | IMPLEMENTED · TESTED OFFLINE | 15 blueprints |
+| Inteligência whitebox (segregada) | IMPLEMENTED (F1) · restante **PLANNED** | Ingestão de GitHub/Confluence/STRIDE no roadmap |
+| Pipeline de relatórios | IMPLEMENTED (templates/bibliotecas) · plugin no Caido **PLANNED** | `reports/` |
 
 <p align="center"><img src="images/assets/pipeline_assessment.png" alt="———" width="100%" /></p>
 
-## Architecture
+## Arquitetura
 
 <img src="images/assets/orchestration_hub.png" alt="" align="right" width="230" />
 
-SYNAPSE is modular and runtime-agnostic. A runtime adapter loads the Markdown dispatcher; the dispatcher
-routes to the KB and flows; outward actions go **only** through the Capability Bridge; all state lives in
-the engagement workspace. Pi has a native Bridge adapter; Antigravity's only path to the Bridge is the
-stateless CLI adapter, so flows such as `/investigar` are **not** protected by the Bridge there (see the
-[compatibility matrix](#runtime-compatibility-matrix)).
+O SYNAPSE é modular e agnóstico de runtime. Um adapter de runtime carrega o dispatcher em Markdown; o dispatcher
+encaminha para a KB e os flows; ações externas passam **somente** pela Capability Bridge; todo o estado fica no
+workspace do engagement. O Pi tem adapter nativo da Bridge; no Antigravity, o único caminho até a Bridge é o
+adapter CLI sem estado, então flows como `/investigar` **não** são protegidos pela Bridge lá (veja a
+[matriz de compatibilidade](#matriz-de-compatibilidade-de-runtimes)).
 
 ```mermaid
 flowchart TB
-  subgraph RT["Runtime adapters"]
+  subgraph RT["Adapters de runtime"]
     PI["Pi Agent"]:::rt
     AG["Antigravity"]:::rt
     CC["Claude Code"]:::rt
   end
   PI & AG & CC --> DISP["Dispatcher — SKILL.md"]
-  PI & AG & CC -.->|shell: outside the Bridge| SHELL["Runtime shell<br/>OS permissions only"]
-  AG -.->|no stateful adapter: http.* via adapters/cli.mjs| BR
-  DISP --> KB["Knowledge Base<br/>127 entries · 15 agents"]
+  PI & AG & CC -.->|shell: fora da Bridge| SHELL["Shell do runtime<br/>só permissões do SO"]
+  AG -.->|sem adapter com estado: http.* via adapters/cli.mjs| BR
+  DISP --> KB["Base de Conhecimento<br/>127 entradas · 15 agentes"]
   DISP --> FLOWS["Flows<br/>scope · recon · report · caido"]
-  DISP --> WS["Engagement Workspace<br/>bootstrap · scope · state"]
-  DISP -->|securityauditor_* tools, where the runtime has them| BR["Capability Bridge"]
-  BR -->|Class R: read| TOOLS["Tools<br/>HTTP · Browser · Caido read"]
-  BR -->|Class A: gated| GATE["Approval Gate + Scope Guard"]
-  GATE --> ACTIVE["Active operations<br/>Replay · Findings"]
-  WS --> STATE["engagements/*<br/>evidence · records · audit log"]
+  DISP --> WS["Workspace do Engagement<br/>bootstrap · escopo · estado"]
+  DISP -->|ferramentas securityauditor_*, onde o runtime as tem| BR["Capability Bridge"]
+  BR -->|Classe R: leitura| TOOLS["Ferramentas<br/>HTTP · Navegador · leitura Caido"]
+  BR -->|Classe A: sob gate| GATE["Approval Gate + Scope Guard"]
+  GATE --> ACTIVE["Operações ativas<br/>Replay · Findings"]
+  WS --> STATE["engagements/*<br/>evidências · records · log de auditoria"]
   classDef rt fill:#1a1030,stroke:#9D4EDD,color:#E7E8F0;
 ```
 
-**Key invariants.** One dispatcher. The Bridge is the only outward surface **of the harness's own tools**.
-Modes grant **no** capability; they only describe posture. The Scope Guard validates every active target;
-project isolation (`_caidoAssoc`) binds reads to the associated project. Reading captured data never
-authorizes acting on it.
+**Invariantes principais.** Um único dispatcher. A Bridge é a única superfície externa **das ferramentas do próprio harness**.
+Modos **não** concedem capacidade; só descrevem a postura. O Scope Guard valida todo alvo ativo; o
+isolamento de projeto (`_caidoAssoc`) prende as leituras ao projeto associado. Ler dados capturados nunca
+autoriza agir sobre eles.
 
-> **The Bridge binds its own tools, not the agent.** A runtime's generic shell is outside it: Pi's `bash`, for
-> instance, is not sandboxed and can edit the contexts file or reach hosts directly. Real containment needs
-> OS-level isolation. See [Limitations](#limitations).
+> **A Bridge restringe as próprias ferramentas, não o agente.** O shell genérico de um runtime fica fora dela: o `bash` do Pi, por
+> exemplo, não tem sandbox e pode editar o arquivo de contextos ou alcançar hosts diretamente. Contenção real exige
+> isolamento no nível do sistema operacional. Veja [Limitações](#limitações).
 
 <p align="center"><img src="images/assets/divider_synapse_chip.png" alt="———" width="100%" /></p>
 
-## Installation
+## Instalação
 
-> SYNAPSE is a **central harness with local per-project activation**: skills are **never** installed
-> globally. Each runtime discovers the harness in its own way. Requirements: **Node.js ≥ 22** (native test
-> runner, `fetch`, native `.env` parsing), `git`. Optional: a Caido desktop instance, a Playwright-core
-> browser (auto-detected).
+> O SYNAPSE é um **harness central com ativação local por projeto**: skills **nunca** são instaladas
+> globalmente. Cada runtime descobre o harness do seu jeito. Requisitos: **Node.js ≥ 22** (test
+> runner nativo, `fetch`, leitura nativa de `.env`), `git`. Opcional: uma instância desktop do Caido e um navegador
+> para o Playwright-core (detectado automaticamente).
 
 ```bash
-git clone <your-private-repo> SYNAPSE && cd SYNAPSE
-cd tools/web-runtime && npm install && cd -   # runtime deps (reproducible; not versioned)
-cp .env.example .env                            # fill in SA_ENGAGEMENT_ROOT, and CAIDO_BASE_URL / CAIDO_TOKEN as needed
-node tools/preflight/cli.mjs doctor             # checks the environment and runtime facts
+git clone <seu-repo-privado> SYNAPSE && cd SYNAPSE
+cd tools/web-runtime && npm install && cd -   # dependências de runtime (reproduzíveis; não versionadas)
+cp .env.example .env                            # preencha SA_ENGAGEMENT_ROOT e, se precisar, CAIDO_BASE_URL / CAIDO_TOKEN
+node tools/preflight/cli.mjs doctor             # verifica o ambiente e os fatos do runtime
 ```
 
-This `.env` is central, so it does **not** reach every project. Only known plain config applies everywhere. `CAIDO_TOKEN` loads only for the commands that need it, at
-the harness root or in a project activated with `--caido`, whose decision is kept beside `.env`, by real path, not in the
-project; `SA_ENGAGEMENT`, `SA_SESSION_ID`, `CAIDO_PROJECT_ID` and other
-context-bound keys apply only at the harness root; any unknown key is withheld. Variables already exported win; `SA_SKIP_ENV_FILE=1` skips the file. This reduces
-accidental exposure and is not a barrier: an agent with a shell can read the file
-([configuration guide](docs/handbook/operator/configuration.md)).
+Esse `.env` é central, portanto **não** chega a todos os projetos. Só configuração simples e conhecida vale em toda parte. `CAIDO_TOKEN` só é carregado para os comandos que precisam dele,
+na raiz do harness ou em um projeto ativado com `--caido`, cuja decisão fica ao lado do `.env`, por caminho real, e não no
+projeto; `SA_ENGAGEMENT`, `SA_SESSION_ID`, `CAIDO_PROJECT_ID` e outras
+chaves ligadas a contexto só valem na raiz do harness; chave desconhecida é retida. Variáveis já exportadas prevalecem; `SA_SKIP_ENV_FILE=1` ignora o arquivo. Isso reduz
+exposição acidental e não é uma barreira: um agente com shell consegue ler o arquivo
+([guia de configuração](docs/handbook/operator/configuration.md)).
 
-Activation links the harness into a project directory and declares runtimes. `--runtime` takes
-`claude-code`, `pi`, `antigravity`, `all` or a comma list (`pi,antigravity`). Without the flag, a first
-activation declares `claude-code` and a re-activation keeps the runtimes in the marker. Unknown values are
-rejected. Re-activating with another set adds or removes the `.pi/` and `.agents/` links accordingly.
+A ativação linka o harness em um diretório de projeto e declara runtimes. `--runtime` aceita
+`claude-code`, `pi`, `antigravity`, `all` ou uma lista separada por vírgulas (`pi,antigravity`). Sem a flag, a primeira
+ativação declara `claude-code` e uma reativação mantém os runtimes do marcador. Valores desconhecidos são
+rejeitados. Reativar com outro conjunto adiciona ou remove os links `.pi/` e `.agents/` conforme o caso.
 
-### Pi Agent (primary runtime)
+### Pi Agent (runtime primário)
 
 ```bash
-# Link the harness into a project (nothing is registered globally):
+# Linka o harness em um projeto (nada é registrado globalmente):
 node <harness>/tools/activation/cli.mjs activate --project <dir> --runtime pi
 cd <dir>
-# A project you reviewed: trust it for this run; skills run as /skill:<name>:
+# Projeto que você revisou: confie nele nesta execução; skills rodam como /skill:<nome>:
 pi -a --provider openai-codex --model gpt-6-luna --thinking low
-# A client repository or anything unreviewed: ignore what is local, load only SYNAPSE:
+# Repositório de cliente ou qualquer coisa não revisada: ignore o que é local e carregue só o SYNAPSE:
 pi -na --skill <harness>/SKILL.md --skill <harness>/.claude/skills \
   -e <harness>/tools/web-runtime/adapters/pi/extension-pi.mjs --provider openai-codex --model gpt-6-luna --thinking low
-# Either way, the Capability Bridge tools need an operator-written Execution Context:
+# Em ambos os casos, as ferramentas da Capability Bridge precisam de um Execution Context escrito pelo operador:
 SECAUDIT_BRIDGE_CONTEXTS=<ctx.json> pi -a
 ```
 
-- **Trust:** `-a` and `/trust` load every project-local resource, and a project's `.pi/extensions` is **code that runs on
-  startup** (proved by `tools/web-runtime/test-pi-trust.mjs` against real Pi). `activate` and `status` list what the project
-  supplies beyond SYNAPSE's links. Context files such as `AGENTS.md` load even with `-na`.
-  The project's `.pi/settings.json` is trust-gated; non-interactive modes skip it without `-a`.
-- **Model:** Pi's default model may not be OpenAI, so pass provider and model explicitly. Authenticate through
-  Pi itself (`/login`); SYNAPSE stores no model credentials.
-- **Context files:** activation links `AGENTS.md` (a thin pointer to `SKILL.md`). `bootstrap` also generates
-  `AGENTS.md` **at the engagement root** when the project declares `pi` or `antigravity`.
-- **From the harness root:** `pi --skill SKILL.md -e tools/web-runtime/adapters/pi/extension-pi.mjs` also works,
-  without activation.
-- **Avoid:** `pi install <path>` registers globally in `settings.json`: not the recommended path and **not
-  exercised**.
-- **Degradation:** without parallel dispatch, the agent brief runs as a sequential phase
+- **Confiança:** `-a` e `/trust` carregam todo recurso local do projeto, e `.pi/extensions` do projeto é **código que roda na
+  inicialização** (comprovado por `tools/web-runtime/test-pi-trust.mjs` contra o Pi real). `activate` e `status` listam o que o projeto
+  fornece além dos links do SYNAPSE. Arquivos de contexto como `AGENTS.md` carregam mesmo com `-na`.
+  O `.pi/settings.json` do projeto depende de confiança; modos não interativos o ignoram sem `-a`.
+- **Modelo:** o modelo padrão do Pi pode não ser da OpenAI, então passe provedor e modelo explicitamente. Autentique pelo
+  próprio Pi (`/login`); o SYNAPSE não guarda credenciais de modelo.
+- **Arquivos de contexto:** a ativação linka `AGENTS.md` (um ponteiro mínimo para `SKILL.md`). `bootstrap` também gera
+  `AGENTS.md` **na raiz do engagement** quando o projeto declara `pi` ou `antigravity`.
+- **Pela raiz do harness:** `pi --skill SKILL.md -e tools/web-runtime/adapters/pi/extension-pi.mjs` também funciona,
+  sem ativação.
+- **Evite:** `pi install <path>` registra globalmente em `settings.json`: não é o caminho recomendado e **não foi
+  exercitado**.
+- **Degradação:** sem despacho paralelo, o brief dos agentes roda como fase sequencial
   (`workflows/flows-agents.md`).
-- **Knowledge is not copied:** the adapter points at `skills/`.
-- **Status:** **VALIDATED REAL on synthetic data, with unstable task completion** (Linux, non-interactive `--mode json`). Interactive TUI,
-  `/trust`, real targets, Caido and Windows: **NOT RUN**. Guide:
+- **O conhecimento não é copiado:** o adapter aponta para `skills/`.
+- **Status:** **VALIDATED REAL em dados sintéticos, com conclusão de tarefas instável** (Linux, `--mode json` não interativo). TUI interativa,
+  `/trust`, alvos reais, Caido e Windows: **NOT RUN**. Guia:
   [`docs/handbook/operator/pi-agent.md`](docs/handbook/operator/pi-agent.md).
 
-### Google Antigravity (primary runtime)
+### Google Antigravity (runtime primário)
 
 ```bash
-# Link the harness into a project (nothing is registered globally):
+# Linka o harness em um projeto (nada é registrado globalmente):
 node <harness>/tools/activation/cli.mjs activate --project <dir> --runtime antigravity
 cd <dir>
-agy models           # lists the model ids available to your account
-agy -p /skills       # lists skills without a model turn; the dispatcher and the 13 SYNAPSE skills must appear
+agy models           # lista os ids de modelo disponíveis para sua conta
+agy -p /skills       # lista as skills sem turno de modelo; o dispatcher e as 13 skills do SYNAPSE devem aparecer
 ```
 
-- **CLI:** `agy` is a headless agentic CLI: `agy -p "<prompt>" --model <id> --output-format json|stream-json --print-timeout 120s`,
-  with `--continue` and `--conversation <id>` to resume. Plain `agy` is interactive.
-- **Discovery:** activation links `AGENTS.md` and `.agents/skills`: links to the 13 skills and to `SKILL.md` as
-  `security-auditor`, one dispatcher and no copy. Start a prompt with `/security-auditor` to load it; a `read_file` event in
-  `stream-json` is the evidence, not a plausible answer.
-- **Headless block:** anything that needs a shell command is refused on an account without `--mode auto`. The
-  decision on how to proceed is the operator's: see the
-  [Antigravity guide](docs/handbook/operator/antigravity.md).
-- **Bridge:** there is no stateful adapter and **flows here are not protected by the Bridge**: without
-  `securityauditor_*` tools, Scope Guard and Approval Gate do not apply. `tools/web-runtime/adapters/cli.mjs` is the only path
-  (`capabilities.*`, `http.*` GET/HEAD). With `SECAUDIT_BRIDGE_CONTEXTS` it uses that file's context, bound to the
-  engagement selected in the project; either form reports `operatorVerified: false`, because the caller may be the agent
-  itself. `/investigar`'s stateful ops have no path here.
-- **Knowledge is not copied:** it points at `skills/`.
-- **Status:** **PARTIAL, not homologated.** Skill discovery, `AGENTS.md` loading and opening the dispatcher through `/security-auditor` are VALIDATED REAL (a natural prompt doesn't always open it);
-  following the dispatcher is not verified, and workflow scenarios are BLOCKED headless.
+- **CLI:** `agy` é uma CLI agêntica headless: `agy -p "<prompt>" --model <id> --output-format json|stream-json --print-timeout 120s`,
+  com `--continue` e `--conversation <id>` para retomar. `agy` sem argumentos é interativo.
+- **Descoberta:** a ativação linka `AGENTS.md` e `.agents/skills`: links para as 13 skills e para `SKILL.md` como
+  `security-auditor`, um único dispatcher e nenhuma cópia. Comece um prompt com `/security-auditor` para carregá-lo; a evidência é um evento `read_file` em
+  `stream-json`, não uma resposta plausível.
+- **Bloqueio headless:** tudo o que precisa de comando de shell é recusado em conta sem `--mode auto`. A
+  decisão de como prosseguir é do operador: veja o
+  [guia do Antigravity](docs/handbook/operator/antigravity.md).
+- **Bridge:** não há adapter com estado e **os flows aqui não são protegidos pela Bridge**: sem
+  ferramentas `securityauditor_*`, Scope Guard e Approval Gate não se aplicam. `tools/web-runtime/adapters/cli.mjs` é o único caminho
+  (`capabilities.*`, `http.*` GET/HEAD). Com `SECAUDIT_BRIDGE_CONTEXTS`, ele usa o contexto desse arquivo, preso ao
+  engagement selecionado no projeto; qualquer das formas reporta `operatorVerified: false`, porque quem chama pode ser o próprio
+  agente. As operações com estado de `/investigar` não têm caminho aqui.
+- **O conhecimento não é copiado:** aponta para `skills/`.
+- **Status:** **PARTIAL, não homologado.** Descoberta de skills, carregamento do `AGENTS.md` e abertura do dispatcher por `/security-auditor` são VALIDATED REAL (um prompt natural nem sempre o abre);
+  seguir o dispatcher não está verificado, e os cenários de workflow estão BLOCKED em headless.
 
-### Claude Code (additional runtime)
+### Claude Code (runtime adicional)
 
 ```bash
-# .claude/skills/<name>/ are real directories, discovered at SESSION START
-node tools/activation/cli.mjs activate --project <dir>   # local activation in an external project, if needed
-# then open a new session; skills such as /iniciar-pentest, /investigar, /modo appear
+# .claude/skills/<nome>/ são diretórios reais, descobertos no INÍCIO DA SESSÃO
+node tools/activation/cli.mjs activate --project <dir>   # ativação local em projeto externo, se precisar
+# depois abra uma nova sessão; skills como /iniciar-pentest, /investigar, /modo aparecem
 ```
 
-- **Status:** **VALIDATED REAL** (S4 acceptance on Omarchy/Linux): bootstrap, Copilot, supervised Autopilot and
-  read-only Caido integration exercised live. Not re-run live in the latest round; activation and offline tests
-  still pass.
+- **Status:** **VALIDATED REAL** (aceitação S4 em Omarchy/Linux): bootstrap, Copilot, Autopilot supervisionado e
+  integração somente leitura com o Caido exercitados ao vivo. Não repetido ao vivo na rodada mais recente; a ativação e os testes offline
+  continuam passando.
 
-> **Honesty gate:** SYNAPSE is designed to be runtime-agnostic, and Pi/Antigravity are the intended primary
-> runtimes, but a dimension is only marked **VALIDATED REAL** on a runtime after a real run on it. See
+> **Portão de honestidade:** o SYNAPSE foi projetado para ser agnóstico de runtime, e Pi/Antigravity são os runtimes
+> primários pretendidos, mas uma dimensão só é marcada **VALIDATED REAL** em um runtime depois de uma execução real nele. Veja
 > [`docs/handbook/operator/runtimes.md`](docs/handbook/operator/runtimes.md).
 
 <p align="center"><img src="images/assets/divider_code.png" alt="———" width="100%" /></p>
 
-## Configuration
+## Configuração
 
-| Variable | Required | Purpose |
+| Variável | Obrigatória | Finalidade |
 |---|---|---|
-| `CAIDO_BASE_URL` | for Caido | Caido GraphQL base URL |
-| `CAIDO_TOKEN` | for Caido | Bearer token (**never printed / versioned**). From `.env` only at the harness root or with `activate --caido`, recorded beside `.env`, and only for the commands that need it |
-| `SA_ENGAGEMENT_ROOT` | yes, for engagements | Engagements root directory (absolute path, outside the harness; inside it, only `engagements/` is accepted) |
-| `SA_SESSION_ID` | optional | Separate session for the active-engagement pointer. An activated project or the harness root derives a stable session without it; an explicit value stays bound to the project or harness root, and gives no session inside harness resources linked into projects. Outside both it is the only way to have a selection: otherwise `use` refuses |
-| `SECAUDIT_BRIDGE_CONTEXTS` | for Bridge tools on Pi | Path to the operator-written Execution Context JSON |
-| `SA_SKIP_ENV_FILE=1` | tests | Hermetic test mode (ignores `.env`) |
+| `CAIDO_BASE_URL` | para o Caido | URL base do GraphQL do Caido |
+| `CAIDO_TOKEN` | para o Caido | Token Bearer (**nunca impresso / versionado**). Vem do `.env` só na raiz do harness ou com `activate --caido`, registrado ao lado do `.env`, e só para os comandos que precisam dele |
+| `SA_ENGAGEMENT_ROOT` | sim, para engagements | Diretório raiz dos engagements (caminho absoluto, fora do harness; dentro dele, só `engagements/` é aceito) |
+| `SA_SESSION_ID` | opcional | Sessão separada para o ponteiro do engagement ativo. Projeto ativado ou raiz do harness derivam uma sessão estável sem ela; um valor explícito fica preso ao projeto ou à raiz do harness, e não dá sessão dentro de recursos do harness linkados em projetos. Fora desses dois, é o único meio de ter seleção: sem ela, `use` recusa |
+| `SECAUDIT_BRIDGE_CONTEXTS` | para ferramentas da Bridge no Pi | Caminho do JSON de Execution Context escrito pelo operador |
+| `SA_SKIP_ENV_FILE=1` | testes | Modo de teste hermético (ignora o `.env`) |
 
-> The `SA_*` prefix and the `.hackbot/` state directory are **stable legacy identifiers**, kept for
-> compatibility; the product name is SYNAPSE, but these technical contracts intentionally stay unchanged.
-> Secrets live only in `.env` (git-ignored) and in the per-engagement `.config`, never in Git.
-> Run `node tools/preflight/cli.mjs doctor` to check the configuration without exposing values.
+> O prefixo `SA_*` e o diretório de estado `.hackbot/` são **identificadores legados estáveis**, mantidos por
+> compatibilidade; o produto se chama SYNAPSE, mas esses contratos técnicos permanecem de propósito.
+> Segredos ficam só no `.env` (ignorado pelo Git) e no `.config` de cada engagement, nunca no Git.
+> Rode `node tools/preflight/cli.mjs doctor` para verificar a configuração sem expor valores.
 
 <p align="center"><img src="images/assets/divider_neural.png" alt="———" width="100%" /></p>
 
-## Quick Start
+## Início Rápido
 
-The common operating flow (runtime-neutral):
+O fluxo comum de operação, neutro quanto ao runtime:
 
-1. **Prepare SYNAPSE**: `npm install` in `tools/web-runtime`, configure `.env`, run `doctor`.
-2. **Select a runtime**: Pi Agent, Antigravity or Claude Code, and activate a project for it.
-3. **Create an engagement**: isolated workspace with buckets + `scope.md`.
-4. **Define the scope**: list the authorized hosts in `scope.md`.
-5. **Select the engagement**: it becomes the session's active one.
-6. **Choose a mode**: Copilot (default) or supervised Autopilot.
-7. **Start the pentest**: recon and surface mapping within scope.
-8. **Investigate**: analyze traffic/surface; draft grounded Investigation Records.
-9. **Review the results**: findings, evidence, provenance.
-10. **Resume**: come back later; state and tasks persist idempotently.
+1. **Prepare o SYNAPSE**: `npm install` em `tools/web-runtime`, configure o `.env`, rode o `doctor`.
+2. **Selecione um runtime**: Pi Agent, Antigravity ou Claude Code, e ative um projeto para ele.
+3. **Crie um engagement**: workspace isolado com buckets + `scope.md`.
+4. **Defina o escopo**: liste os hosts autorizados em `scope.md`.
+5. **Selecione o engagement**: ele passa a ser o ativo da sessão.
+6. **Escolha um modo**: Copilot (padrão) ou Autopilot supervisionado.
+7. **Inicie o pentest**: recon e mapeamento de superfície dentro do escopo.
+8. **Investigue**: analise tráfego e superfície; redija Investigation Records fundamentados.
+9. **Revise os resultados**: findings, evidências, proveniência.
+10. **Retome**: volte depois; estado e tarefas persistem de forma idempotente.
 
-The engagement steps are plain CLIs, identical in any activated project and runnable by the operator or the agent:
+Os passos de engagement são CLIs simples, idênticas em qualquer projeto ativado e executáveis pelo operador ou pelo agente:
 
 ```bash
 node tools/workspace/cli.mjs init --name lab --modality blackbox
-node tools/workspace/cli.mjs scope --name lab --file <scope.md>   # needs '# Scope' and '## In Scope'
+node tools/workspace/cli.mjs scope --name lab --file <scope.md>   # exige '# Scope' e '## In Scope'
 node tools/workspace/cli.mjs use --name lab
-node tools/workspace/cli.mjs bootstrap                            # AGENTS.md or CLAUDE.md, per the activation marker
+node tools/workspace/cli.mjs bootstrap                            # AGENTS.md ou CLAUDE.md, conforme o marcador de ativação
 node tools/modes/cli.mjs status
 node tools/preflight/cli.mjs preflight --profile core-lab
 ```
 
-**Pi Agent** (from the activated project):
+**Pi Agent** (a partir do projeto ativado):
 
 ```bash
-# Interactive; then /skill:criar-engagement → /skill:usar-engagement → /skill:iniciar-pentest → /skill:investigar → /skill:modo
+# Interativo; depois /skill:criar-engagement → /skill:usar-engagement → /skill:iniciar-pentest → /skill:investigar → /skill:modo
 pi -a --provider openai-codex --model gpt-6-luna --thinking low
 
-# Non-interactive, then resume the same session:
+# Não interativo, depois retoma a mesma sessão:
 pi -a --mode json --provider openai-codex --model gpt-6-luna --thinking low --session-dir <dir> -- "/skill:engagement-atual"
-pi -a --mode json --provider openai-codex --model gpt-6-luna --thinking low --session-dir <dir> --continue -- "What is the next task?"
+pi -a --mode json --provider openai-codex --model gpt-6-luna --thinking low --session-dir <dir> --continue -- "Qual é a próxima tarefa?"
 ```
 
-**Antigravity** (from the activated project):
+**Antigravity** (a partir do projeto ativado):
 
 ```bash
-# Interactive: a human approves each prompt (this path is NOT RUN by the project):
+# Interativo: um humano aprova cada prompt (este caminho está NOT RUN pelo projeto):
 agy
 
-# Headless: skill expansion and file reads work; anything needing a shell command, skill CLIs included, is denied
-# unless the operator decides otherwise:
+# Headless: expansão de skills e leitura de arquivos funcionam; tudo o que precisa de comando de shell, inclusive CLIs de skills, é negado
+# salvo decisão contrária do operador:
 agy -p "<prompt>" --model <id> --output-format json --print-timeout 120s
 ```
 
-**Claude Code** (slash skills, discovered per session):
+**Claude Code** (skills por barra, descobertas por sessão):
 
 ```text
 /criar-engagement   →   /usar-engagement   →   /iniciar-pentest   →   /investigar   →   /modo
 ```
 
-> A skill name is the same on every runtime; the invocation differs: `/skill:<name>` on Pi, `/<name>` on
-> Antigravity and Claude Code. See the compatibility matrix for what is proven on each.
+> O nome de uma skill é o mesmo em todo runtime; a invocação muda: `/skill:<nome>` no Pi, `/<nome>` no
+> Antigravity e no Claude Code. Veja na matriz de compatibilidade o que está comprovado em cada um.
 
 <p align="center"><img src="images/assets/divider_code.png" alt="———" width="100%" /></p>
 
-## Operating Modes
+## Modos de Operação
 
 <img src="images/assets/panel_agent_loop.png" alt="" align="right" width="200" />
 
 ```mermaid
 flowchart LR
-  T["Task list<br/>toDoList.md"] --> SEL["parseTasks / next"]
-  SEL --> ACT["Authorized step<br/>(Class R)"]
-  ACT --> RES["Result"]
-  RES -->|feeds the next| SEL
-  ACT -->|needs Class A| GATE["Approval Gate<br/>STOP"]
+  T["Lista de tarefas<br/>toDoList.md"] --> SEL["parseTasks / next"]
+  SEL --> ACT["Passo autorizado<br/>(Classe R)"]
+  ACT --> RES["Resultado"]
+  RES -->|alimenta o próximo| SEL
+  ACT -->|precisa de Classe A| GATE["Approval Gate<br/>PARA"]
   classDef g fill:#2a0a1a,stroke:#FF00D4,color:#E7E8F0;
   class GATE g;
 ```
 
-- **Copilot (default).** The operator drives; the agent runs allowed steps (Class R) on request: read,
-  analyze, persist, present.
-- **Autopilot (supervised).** The agent chains authorized steps from the task list, feeding each result into
-  the next, and **stops at every Approval Gate** (any Class A / active operation).
-- **Modes grant no capability.** They only define posture; permission always comes from Bridge + Scope Guard +
-  Approval Gate. Autopilot never runs an active operation without explicit approval.
-- **Persistence / stop criteria.** Progress is idempotent and resumable; the loop stops at a gate, an exhausted
-  budget, a missing capability (→ NOT RUN) or an empty task list. Switching engagement returns the mode to
+- **Copilot (padrão).** O operador conduz; o agente executa os passos permitidos (Classe R) quando pedido: ler,
+  analisar, persistir, apresentar.
+- **Autopilot (supervisionado).** O agente encadeia passos autorizados da lista de tarefas, usando cada resultado no
+  seguinte, e **para em todo Approval Gate** (qualquer operação Classe A / ativa).
+- **Modos não concedem capacidade.** Só definem a postura; a permissão vem sempre de Bridge + Scope Guard +
+  Approval Gate. O Autopilot nunca executa operação ativa sem aprovação explícita.
+- **Persistência / critérios de parada.** O progresso é idempotente e retomável; o loop para em um gate, em orçamento
+  esgotado, em capacidade ausente (→ NOT RUN) ou com a lista de tarefas vazia. Trocar de engagement devolve o modo a
   Copilot.
 
 <p align="center"><img src="images/assets/divider_synapse_chip.png" alt="———" width="100%" /></p>
 
-## Commands and Skills
+## Comandos e Skills
 
-| Layer | What | Where |
+| Camada | O quê | Onde |
 |---|---|---|
-| Harness skills | Dispatcher + KB routing | `SKILL.md`, `agents/`, `workflows/flows-*.md` |
-| Runtime skills | Entry points exposed by the runtime | Claude Code: `.claude/skills/` · Pi: `.pi/settings.json` (`/skill:<name>`) · Antigravity: `AGENTS.md` + `.agents/skills` |
-| Internal CLI | Deterministic tools | `tools/workspace/cli.mjs`, `tools/modes/cli.mjs`, `tools/preflight/cli.mjs`, `tools/activation/cli.mjs` |
-| Capability Bridge | Outward actions | `tools/web-runtime/bridge.mjs` |
-| Specialized agents | KB categories | `agents/<category>/` |
+| Skills do harness | Dispatcher + roteamento da KB | `SKILL.md`, `agents/`, `workflows/flows-*.md` |
+| Skills de runtime | Pontos de entrada expostos pelo runtime | Claude Code: `.claude/skills/` · Pi: `.pi/settings.json` (`/skill:<nome>`) · Antigravity: `AGENTS.md` + `.agents/skills` |
+| CLI interna | Ferramentas determinísticas | `tools/workspace/cli.mjs`, `tools/modes/cli.mjs`, `tools/preflight/cli.mjs`, `tools/activation/cli.mjs` |
+| Capability Bridge | Ações externas | `tools/web-runtime/bridge.mjs` |
+| Agentes especializados | Categorias da KB | `agents/<categoria>/` |
 
-Equivalence is provided **only where there is real support**: the matrix below never invents it.
+A equivalência só existe **onde há suporte real**: a matriz abaixo nunca a inventa.
 
-### Runtime compatibility matrix
+### Matriz de compatibilidade de runtimes
 
-Pi figures are from Pi 1.4.0 with `openai-codex/gpt-6-luna --thinking low`, on **synthetic data**, Linux,
-non-interactive `--mode json`. Antigravity figures are from antigravity-cli 1.5.1 with `gemini-3.8-flash-low`,
+Os dados do Pi vêm do Pi 1.4.0 com `openai-codex/gpt-6-luna --thinking low`, em **dados sintéticos**, Linux,
+`--mode json` não interativo. Os do Antigravity vêm do antigravity-cli 1.5.1 com `gemini-3.8-flash-low`,
 headless.
 
-| Dimension | Pi Agent | Antigravity | Claude Code |
+| Dimensão | Pi Agent | Antigravity | Claude Code |
 |---|---|---|---|
-| Entry point | `pi -a` from a reviewed activated project, or `pi -na` with explicit paths; `/skill:<name>` | `agy` from an activated project; `/<name>` | `.claude/skills/` (session start) |
-| Skill discovery | **VALIDATED REAL** | **VALIDATED REAL** (13/13) | **VALIDATED REAL** |
-| Local activation | **VALIDATED REAL** | **VALIDATED REAL** | **VALIDATED REAL** |
-| Dispatcher | **VALIDATED REAL** (read by the agent) | **VALIDATED REAL** through `/security-auditor`: `read_file` in the log and a random marker from the file; a natural prompt opens it in most runs, not all; following it is not verified | **VALIDATED REAL** |
-| Workspace / Bootstrap | **VALIDATED REAL** | **BLOCKED** headless; interactive NOT RUN | **VALIDATED REAL** |
-| Mode switch | **VALIDATED REAL** | **BLOCKED** headless; interactive NOT RUN | **VALIDATED REAL** |
-| Capabilities (Bridge) | **VALIDATED REAL**: `http.inspect` on a loopback fixture, out-of-scope refused | **PARTIAL**: no stateful adapter, so flows are not Bridge-protected; `adapters/cli.mjs` TESTED OFFLINE, stateless only; through the agent BLOCKED | TESTED OFFLINE |
-| Approval-gated ops actually executed | **NOT RUN** | **NOT RUN** | **NOT RUN** |
-| Caido (read-only) | TESTED OFFLINE; live NOT RUN | **NOT RUN** | **VALIDATED REAL** |
-| Copilot / Autopilot | **VALIDATED REAL**: task with a disk effect; chain over 2 safe tasks stopping at the Class A gate | **BLOCKED** headless; interactive NOT RUN | **VALIDATED REAL** on a synthetic lab; on real in-scope traffic: NOT RUN (NO DATA) |
-| Persistence / resume | **VALIDATED REAL** (`--continue`) | **BLOCKED**: conversation resumes, state read denied | **VALIDATED REAL** |
-| Controlled failure | **VALIDATED REAL** | **PARTIAL**: read-failure path only | TESTED OFFLINE |
-| Project isolation | **VALIDATED REAL** | **PARTIAL**: verified through the CLI only; the agent's shell was denied | TESTED OFFLINE |
-| Interactive use | **NOT RUN** (TUI, `/trust`) | **NOT RUN** | **VALIDATED REAL** |
-| Live end-to-end, real target | **NOT RUN** | **NOT RUN** | **PARTIAL**: integration VALIDATED REAL; in-scope analysis NOT RUN (NO DATA) |
+| Ponto de entrada | `pi -a` em projeto ativado e revisado, ou `pi -na` com caminhos explícitos; `/skill:<nome>` | `agy` em projeto ativado; `/<nome>` | `.claude/skills/` (início da sessão) |
+| Descoberta de skills | **VALIDATED REAL** | **VALIDATED REAL** (13/13) | **VALIDATED REAL** |
+| Ativação local | **VALIDATED REAL** | **VALIDATED REAL** | **VALIDATED REAL** |
+| Dispatcher | **VALIDATED REAL** (lido pelo agente) | **VALIDATED REAL** por `/security-auditor`: `read_file` no log e marcador aleatório do arquivo; um prompt natural o abre na maioria das execuções, não em todas; segui-lo não está verificado | **VALIDATED REAL** |
+| Workspace / Bootstrap | **VALIDATED REAL** | **BLOCKED** em headless; interativo NOT RUN | **VALIDATED REAL** |
+| Troca de modo | **VALIDATED REAL** | **BLOCKED** em headless; interativo NOT RUN | **VALIDATED REAL** |
+| Capacidades (Bridge) | **VALIDATED REAL**: `http.inspect` em fixture de loopback, fora de escopo recusado | **PARTIAL**: sem adapter com estado, os flows não têm proteção da Bridge; `adapters/cli.mjs` TESTED OFFLINE, só sem estado; pelo agente BLOCKED | TESTED OFFLINE |
+| Operações sob aprovação de fato executadas | **NOT RUN** | **NOT RUN** | **NOT RUN** |
+| Caido (somente leitura) | TESTED OFFLINE; ao vivo NOT RUN | **NOT RUN** | **VALIDATED REAL** |
+| Copilot / Autopilot | **VALIDATED REAL**: tarefa com efeito em disco; cadeia sobre 2 tarefas seguras parando no gate de Classe A | **BLOCKED** em headless; interativo NOT RUN | **VALIDATED REAL** em laboratório sintético; em tráfego real em escopo: NOT RUN (NO DATA) |
+| Persistência / retomada | **VALIDATED REAL** (`--continue`) | **BLOCKED**: a conversa retoma, a leitura de estado é negada | **VALIDATED REAL** |
+| Falha controlada | **VALIDATED REAL** | **PARTIAL**: só o caminho de falha de leitura | TESTED OFFLINE |
+| Isolamento de projeto | **VALIDATED REAL** | **PARTIAL**: verificado só pela CLI; o shell do agente foi negado | TESTED OFFLINE |
+| Uso interativo | **NOT RUN** (TUI, `/trust`) | **NOT RUN** | **VALIDATED REAL** |
+| Ponta a ponta ao vivo, alvo real | **NOT RUN** | **NOT RUN** | **PARTIAL**: integração VALIDATED REAL; análise em escopo NOT RUN (NO DATA) |
 | Windows | **NOT RUN** | **NOT RUN** | **NOT RUN** |
 
-> **Pi:** the last full acceptance pass scored **12/14** (scenarios 5 and 12 FAIL; the two before it 13/14 and 11/14). **Results vary between passes.** Pi itself doesn't
-> interrupt anything: the model ends its turn before finishing in roughly a quarter to a third of compound prompts (small samples), and
-> the variables tested don't explain that rate; `SKILL.md`, the policies, the model and its thinking level were not varied. A misleading `AGENTS.md` line that steered it toward the Bridge is fixed, and no recorded tool call was classified as executed against
-> the out-of-scope host (text detection on logs, no network capture). See [report 49](docs/architecture-review/49-pi-reliability-stabilization.md).
-> The Autopilot prompt names the `next` selector; an
-> earlier run without that hint called `next` once. This is validation on synthetic data,
-> not a pentest of a real target.
+> **Pi:** a última passada completa de aceitação deu **12/14** (cenários 5 e 12 FAIL; as duas anteriores, 13/14 e 11/14). **O resultado varia entre passadas.** O Pi em si não
+> interrompe nada: o modelo encerra o turno antes de concluir em cerca de 1/4 a 1/3 dos prompts compostos (amostras pequenas), e
+> as variáveis testadas não explicam essa taxa; `SKILL.md`, políticas, modelo e nível de raciocínio não foram variados. Uma linha enganosa do `AGENTS.md` que o desviava para a Bridge foi corrigida, e nenhuma chamada de ferramenta registrada foi classificada como executada contra
+> o host fora de escopo (detecção textual nos logs, sem captura de rede). Veja o [relatório 49](docs/architecture-review/49-pi-reliability-stabilization.md).
+> O prompt do Autopilot cita o seletor `next`; uma
+> execução anterior sem essa dica chamou `next` uma vez. Isso é validação em dados sintéticos,
+> não um pentest de alvo real.
 >
-> **Antigravity:** scenario 1 PASS (activation, discovery); scenario 2 varies: a natural prompt opens the dispatcher in most runs, not all, while `/security-auditor` loads it, shown by a `read_file`
-> event and a random marker from the file; following it is not verified; scenarios 3-11 **BLOCKED** headless, never run past the
-> permission denial; scenario 12 PASS covers only a read-failure path; scenario 13 **PARTIAL**. Antigravity is
-> **not homologated**.
+> **Antigravity:** cenário 1 PASS (ativação, descoberta); o cenário 2 varia: um prompt natural abre o dispatcher na maioria das execuções, não em todas, enquanto `/security-auditor` o carrega, como mostram um evento `read_file`
+> e um marcador aleatório do arquivo; segui-lo não está verificado; cenários 3-11 **BLOCKED** em headless, nunca executados além da
+> negação de permissão; o cenário 12 PASS cobre só um caminho de falha de leitura; cenário 13 **PARTIAL**. O Antigravity
+> **não está homologado**.
 >
-> **Claude Code:** validated in S4 (integration and experience); the analysis → leads → Investigation Record chain
-> on real in-scope traffic remains NOT RUN (NO DATA).
+> **Claude Code:** validado no S4 (integração e experiência); a cadeia análise → leads → Investigation Record
+> em tráfego real em escopo continua NOT RUN (NO DATA).
 >
-> **Codex** is not part of this distribution (scope decision). `openai-codex` above is the name of a Pi model
-> provider, not a runtime integration.
+> **Codex** não faz parte desta distribuição (decisão de escopo). `openai-codex` acima é o nome de um provedor de modelo
+> do Pi, não uma integração de runtime.
 
 <p align="center"><img src="images/assets/divider_neural.png" alt="———" width="100%" /></p>
 
-## Pentest Flows
+## Fluxos de Pentest
 
 ```mermaid
 flowchart LR
-  S["Scope"] --> B["Bootstrap"] --> R["Recon"] --> M["Surface Mapping"]
-  M --> I["Investigation"] --> V["Validation"] --> E["Evidence"]
-  E --> F["Findings"] --> RP["Reporting"]
-  RP -.resume.-> I
+  S["Escopo"] --> B["Bootstrap"] --> R["Recon"] --> M["Mapeamento de Superfície"]
+  M --> I["Investigação"] --> V["Validação"] --> E["Evidências"]
+  E --> F["Findings"] --> RP["Relatório"]
+  RP -.retomada.-> I
 ```
 
-- **Blackbox / Graybox / Whitebox** are supported modalities. Whitebox intelligence is **segregated** and
-  partially implemented (F1); deeper ingestion (GitHub/Confluence/STRIDE) is on the roadmap and is **not**
-  presented as complete.
-- Every active step goes through the Scope Guard and the Approval Gate. Evidence preserves provenance; an
-  Investigation Record is only written with a grounded hypothesis against an authorized target.
+- **Blackbox / Graybox / Whitebox** são modalidades suportadas. A inteligência whitebox é **segregada** e
+  parcialmente implementada (F1); a ingestão mais profunda (GitHub/Confluence/STRIDE) está no roadmap e **não** é
+  apresentada como completa.
+- Todo passo ativo passa pelo Scope Guard e pelo Approval Gate. As evidências preservam a proveniência; um
+  Investigation Record só é escrito com hipótese fundamentada contra um alvo autorizado.
 
 <p align="center"><img src="images/assets/divider_synapse_chip.png" alt="———" width="100%" /></p>
 
-## Caido Integration
+## Integração com o Caido
 
 <img src="images/assets/network_router.png" alt="" align="right" width="210" />
 
-SYNAPSE talks to Caido over GraphQL (`<baseUrl>/graphql`, `Authorization: Bearer <token>`).
+O SYNAPSE fala com o Caido por GraphQL (`<baseUrl>/graphql`, `Authorization: Bearer <token>`).
 
-- **Associated project.** All reads are bound to the engagement's associated project (`_caidoAssoc`);
-  cross-project access is refused (`caido-project-mismatch`).
-- **HTTP History (read-only).** `caido.history` / `caido.request` return **all** captured records of the
-  associated project, each **annotated** `inScope` / out-of-scope. Reading already captured data contacts no
-  external host, so it is **not** withheld by the Scope Guard. Provenance
-  (source / projectId / requestId / responseId / timestamp) is preserved.
-- **HTTPQL, pagination, fields** supported; `currentProject` is the source of truth on local instances (the
-  `@cloud` `projects` field degrades to empty).
-- **Copilot** performs deterministic, zero-LLM endpoint/parameter analysis over the History.
-- **Supervised active operations.** `caido.replay.run` and `caido.findings.create` are **Class A**: they validate
-  the target against `scope.md` **even with bulk approval** and require per-action approval.
-  **Observing a host in the History is never authorization to act against it.**
-- **Known limitation.** Importing/generating native Caido workflows is **post-MVP** (the SDL exposes an opaque
-  `definition`); it does not block the core.
+- **Projeto associado.** Todas as leituras ficam presas ao projeto associado ao engagement (`_caidoAssoc`);
+  acesso entre projetos é recusado (`caido-project-mismatch`).
+- **HTTP History (somente leitura).** `caido.history` / `caido.request` retornam **todos** os registros capturados do
+  projeto associado, cada um **anotado** como `inScope` ou fora de escopo. Ler dados já capturados não contata nenhum
+  host externo, então isso **não** é retido pelo Scope Guard. A proveniência
+  (source / projectId / requestId / responseId / timestamp) é preservada.
+- **HTTPQL, paginação e campos** são suportados; `currentProject` é a fonte de verdade em instâncias locais (o
+  campo `projects`, com `@cloud`, degrada para vazio).
+- **Copilot** faz análise determinística, sem LLM, de endpoints e parâmetros sobre o History.
+- **Operações ativas supervisionadas.** `caido.replay.run` e `caido.findings.create` são **Classe A**: validam
+  o alvo contra `scope.md` **mesmo com aprovação em lote** e exigem aprovação por ação.
+  **Observar um host no History nunca é autorização para agir contra ele.**
+- **Limitação conhecida.** Importar ou gerar workflows nativos do Caido é **pós-MVP** (o SDL expõe uma `definition`
+  opaca); não bloqueia o núcleo.
 
 <p align="center"><img src="images/assets/divider_code.png" alt="———" width="100%" /></p>
 
-## Project Structure
+## Estrutura do Projeto
 
 ```text
 SYNAPSE/
-├── SKILL.md                     # Dispatcher (entry point; skill name: security-auditor [legacy])
-├── AGENTS.md                    # Thin pointer to SKILL.md for runtimes that load it; grants no permissions
+├── SKILL.md                     # Dispatcher (ponto de entrada; nome da skill: security-auditor [legado])
+├── AGENTS.md                    # Ponteiro mínimo para SKILL.md nos runtimes que o carregam; não concede permissões
 ├── README.md
-├── manifest-h0.json             # KB manifest (127 entries)
+├── manifest-h0.json             # Manifesto da KB (127 entradas)
 ├── .env.example  .config.example
 ├── .gitignore
-├── adapters/                    # Runtime adapter docs: pi-agent · antigravity · claude-code
-├── agents/                      # Knowledge base: 15 categories (112 techniques)
-├── workflows/  references/      # Flows (scope/recon/report/…) + templates, doctrine and Caido investigation flow
+├── adapters/                    # Docs dos adapters de runtime: pi-agent · antigravity · claude-code
+├── agents/                      # Base de conhecimento: 15 categorias (112 técnicas)
+├── workflows/  references/      # Flows (scope/recon/report/…) + templates, doutrina e flow de investigação Caido
 ├── policies/                    # authorization-gate · native-tooling-doctrine · verification-contract
-├── skills/                      # KB bodies (T techniques + B blueprints = 127)
-├── reports/                     # Report templates and libraries
-├── intake/                      # KB intake queue
-├── images/                      # Banner and README assets
+├── skills/                      # Corpos da KB (técnicas T + blueprints B = 127)
+├── reports/                     # Templates e bibliotecas de relatório
+├── intake/                      # Fila de entrada da KB
+├── images/                      # Banner e assets do README
 ├── tools/
 │   ├── workspace/               # engagement.mjs, bootstrap, cli, autopilot
 │   ├── web-runtime/             # bridge.mjs, backends/caido.mjs + caido-active.mjs, caido-copilot, adapters/pi
-│   ├── modes/                   # copilot / autopilot posture
+│   ├── modes/                   # postura copilot / autopilot
 │   ├── preflight/               # doctor, env-loader
-│   ├── activation/              # local per-project activation
-│   └── acceptance/              # real-runtime acceptance (separate from the suites; costs money)
-├── .claude/                     # Claude Code skills (real dirs) + hooks + settings
-├── .pi/                         # Pi project settings (skills + Bridge extension; trust-gated)
-├── .agents/                     # Antigravity skills (link to .claude/skills)
+│   ├── activation/              # ativação local por projeto
+│   └── acceptance/              # aceitação em runtime real (separada das suítes; custa dinheiro)
+├── .claude/                     # Skills do Claude Code (diretórios reais) + hooks + settings
+├── .pi/                         # Configuração de projeto do Pi (skills + extensão da Bridge; depende de confiança)
+├── .agents/                     # Skills do Antigravity (link para .claude/skills)
 ├── docs/
-│   ├── handbook/                # Operator + engineering handbook
-│   └── architecture-review/     # Historical reviews 00–49 and archive/ (traceability)
-└── engagements/                 # Local engagement data (git-ignored)
+│   ├── handbook/                # Handbook do operador + engenharia
+│   └── architecture-review/     # Revisões históricas 00–49 e archive/ (rastreabilidade)
+└── engagements/                 # Dados locais de engagement (ignorados pelo Git)
 ```
 
 <p align="center"><img src="images/assets/divider_code.png" alt="———" width="100%" /></p>
 
-## Testing and Validation
+## Testes e Validação
 
-Two separate tracks, whose metrics are **never mixed**.
+Duas trilhas separadas, cujas métricas **nunca se misturam**.
 
-**Offline (39 suites + KB validator).** All suites use Node's native test runner (no external test deps), make no
-model call and are hermetic with `SA_SKIP_ENV_FILE=1`.
+**Offline (39 suítes + validador da KB).** Todas as suítes usam o test runner nativo do Node (sem dependências externas de teste), não fazem
+chamada a modelo e são herméticas com `SA_SKIP_ENV_FILE=1`.
 
-`tools/acceptance/rejudge.mjs` replays saved logs read-only with no model. `tools/acceptance/experiment.mjs` runs paired repetitions
-under total run and cost caps, with no retries; preview with `--dry-run`. Traffic to the out-of-scope host is inferred, not captured.
+`tools/acceptance/rejudge.mjs` reavalia logs salvos, somente leitura e sem modelo. `tools/acceptance/experiment.mjs` roda repetições pareadas
+sob tetos de execuções e de custo, sem retries; pré-visualize com `--dry-run`. O tráfego ao host fora de escopo é inferido, não capturado.
 
 ```bash
-# KB validator: must report T=112/112, B=15/15, total=127/127
+# Validador da KB: deve reportar T=112/112, B=15/15, total=127/127
 node docs/architecture-review/validate_h0.mjs . docs/architecture-review/baseline/manifest.json
 
-# Representative suites
+# Suítes representativas
 node tools/workspace/test-engagement.mjs        # workspace
 node tools/workspace/test-bootstrap.mjs         # bootstrap (18)
 node tools/workspace/test-multi-engagement.mjs  # multi-engagement (31)
-node tools/workspace/test-skills.mjs            # skills contract (62)
-node tools/workspace/test-autopilot.mjs         # autopilot loop (13)
-node tools/workspace/test-runtime-contract.mjs  # sessions, roots, bootstrap by runtime (59)
-node tools/modes/test-modes.mjs                 # modes (18)
+node tools/workspace/test-skills.mjs            # contrato das skills (62)
+node tools/workspace/test-autopilot.mjs         # loop do autopilot (13)
+node tools/workspace/test-runtime-contract.mjs  # sessões, roots, bootstrap por runtime (59)
+node tools/modes/test-modes.mjs                 # modos (18)
 node tools/web-runtime/test-bridge.mjs          # capability bridge
-node tools/web-runtime/test-caido.mjs           # caido read + scope (21)
-node tools/web-runtime/test-caido-copilot.mjs   # deterministic copilot (24)
-node tools/activation/test-activation.mjs       # activation (18)
-node tools/activation/test-runtime-links.mjs    # per-runtime link sets (44)
+node tools/web-runtime/test-caido.mjs           # leitura caido + escopo (21)
+node tools/web-runtime/test-caido-copilot.mjs   # copilot determinístico (24)
+node tools/activation/test-activation.mjs       # ativação (18)
+node tools/activation/test-runtime-links.mjs    # conjuntos de links por runtime (44)
 node tools/preflight/test-preflight.mjs         # preflight / doctor
 ```
 
-> The `test-pi-adapter` / `test-pi-entry` / `test-pi-rpc` tests are **integration tests with real Pi** (they require
-> `PI_PKG_DIR` / `PI_BINARY`); without those variables they are **BLOCKED / NOT RUN**, which is not a regression
-> (`test-pi-entry` and `test-pi-rpc` exit 1 with an error naming the missing variable).
+> Os testes `test-pi-adapter` / `test-pi-entry` / `test-pi-rpc` são **testes de integração com o Pi real** (exigem
+> `PI_PKG_DIR` / `PI_BINARY`); sem essas variáveis ficam **BLOCKED / NOT RUN**, o que não é regressão
+> (`test-pi-entry` e `test-pi-rpc` saem com 1 e um erro que nomeia a variável ausente).
 
-**Real-runtime acceptance (separate, costs money).** It spends model budget, so it refuses to start without
-`--accept-model-cost`, and `--harness` must be an export without `.env` or `engagements/`. A verdict comes from tool
-calls in the JSON log and effects on disk, never from model prose alone.
+**Aceitação em runtime real (separada, custa dinheiro).** Consome orçamento de modelo, então recusa começar sem
+`--accept-model-cost`, e `--harness` tem de ser um export sem `.env` nem `engagements/`. O veredito vem de chamadas
+de ferramenta no log JSON e de efeitos em disco, nunca só do texto do modelo.
 
 ```bash
 node tools/acceptance/runtime-acceptance.mjs --runtime pi|antigravity --harness <export> --out <dir> --accept-model-cost
@@ -562,94 +562,92 @@ node tools/acceptance/runtime-acceptance.mjs --runtime pi|antigravity --harness 
 
 <p align="center"><img src="images/assets/divider_neural.png" alt="———" width="100%" /></p>
 
-## Troubleshooting
+## Solução de Problemas
 
-| Symptom | Cause | Action |
+| Sintoma | Causa | Ação |
 |---|---|---|
-| Pi does not see SYNAPSE skills or Bridge tools | Project `.pi/settings.json` is trust-gated | On a reviewed project, `pi -a` or `/trust`; otherwise `pi -na` with explicit paths |
-| `no unambiguous project context` | Not at an activated project or the harness root (a harness subdirectory or a nested repository doesn't count), or the marker is unreadable | Run from the root, activate the project, or set `SA_SESSION_ID` for automation; read commands also take `--name` |
-| `CAIDO_TOKEN withheld` | No opt-in for this project in this harness: never granted, moved, renamed, copied, or activated before the decision moved out of the project | If you trust it, the operator runs `activate --project <dir> --caido`, or exports the token for that command |
-| `SA_ENGAGEMENT=… conflicts` | The variable disagrees with this context's selection; nothing was written | `unset SA_ENGAGEMENT` or `use --name <n>` |
-| `SA_ENGAGEMENT=… selects nothing here` | The variable is set in a project, or a repository nested in one, with no selection; it may be left over from another client; nothing was written | `use --name <n>`, `--name <n>`, or `unset SA_ENGAGEMENT` |
-| `activation marker … is a symbolic link` | The marker is a link; it is never followed | `deactivate --project <dir> --repair`, then `activate` |
-| `invalid-marker` | The activation marker is malformed; nothing was changed | `deactivate --project <dir> --repair`, then `activate` |
-| Pi uses an unexpected model | Pi's default model may not be OpenAI | Pass `--provider` and `--model` |
-| Pi lists skills that are not SYNAPSE's | Pi's real `HOME` loads your own global skills too | Expected; SYNAPSE adds to them and changes nothing global |
-| Bridge tools refuse with `no-trusted-context` | `SECAUDIT_BRIDGE_CONTEXTS` missing or invalid | Point it at the operator-written JSON |
-| `agy` exits 0 with `status: SUCCESS` and an empty response | A tool was auto-denied headless | Inspect `denied_actions`; see the [Antigravity guide](docs/handbook/operator/antigravity.md) |
-| `agy -p /skills` shows no SYNAPSE skills | Project not activated for Antigravity | `activate --project <dir> --runtime antigravity` |
-| `no active engagement` in a project | Selection is per activated project | `node tools/workspace/cli.mjs use --name <n>` in that project |
-| `root-inside-harness` | `SA_ENGAGEMENT_ROOT` resolves inside the harness | Use a directory outside it, or the harness's `engagements/` |
-| `unknown runtime` / `bad-runtime` | Value not supported by the command | Use the values listed in the error |
-| Mode went back to Copilot | Switching engagement resets the mode | Select the mode again |
+| O Pi não vê as skills do SYNAPSE nem as ferramentas da Bridge | O `.pi/settings.json` do projeto depende de confiança | Em projeto revisado, `pi -a` ou `/trust`; caso contrário, `pi -na` com caminhos explícitos |
+| `no unambiguous project context` | Fora de projeto ativado e da raiz do harness (subdiretório do harness ou repositório aninhado não contam), ou marcador ilegível | Rode da raiz, ative o projeto ou defina `SA_SESSION_ID` para automação; comandos de leitura também aceitam `--name` |
+| `CAIDO_TOKEN withheld` | Sem opt-in deste projeto neste harness: nunca concedido, movido, renomeado, copiado ou ativado antes de a decisão sair do projeto | Se confiar, o operador roda `activate --project <dir> --caido` ou exporta o token para aquele comando |
+| `SA_ENGAGEMENT=… conflicts` | A variável diverge da seleção deste contexto; nada foi gravado | `unset SA_ENGAGEMENT` ou `use --name <n>` |
+| `SA_ENGAGEMENT=… selects nothing here` | A variável está definida em um projeto, ou em repositório aninhado nele, sem seleção; pode ter sobrado de outro cliente; nada foi gravado | `use --name <n>`, `--name <n>` ou `unset SA_ENGAGEMENT` |
+| `activation marker … is a symbolic link` | O marcador é um link; nunca é seguido | `deactivate --project <dir> --repair`, depois `activate` |
+| `invalid-marker` | O marcador de ativação está malformado; nada foi alterado | `deactivate --project <dir> --repair`, depois `activate` |
+| O Pi usa um modelo inesperado | O modelo padrão do Pi pode não ser da OpenAI | Passe `--provider` e `--model` |
+| O Pi lista skills que não são do SYNAPSE | O `HOME` real do Pi carrega também suas skills globais | Esperado; o SYNAPSE soma a elas e não muda nada global |
+| Ferramentas da Bridge recusam com `no-trusted-context` | `SECAUDIT_BRIDGE_CONTEXTS` ausente ou inválido | Aponte para o JSON escrito pelo operador |
+| `agy` sai com 0, `status: SUCCESS` e resposta vazia | Uma ferramenta foi negada automaticamente em headless | Inspecione `denied_actions`; veja o [guia do Antigravity](docs/handbook/operator/antigravity.md) |
+| `agy -p /skills` não mostra skills do SYNAPSE | Projeto não ativado para o Antigravity | `activate --project <dir> --runtime antigravity` |
+| `no active engagement` em um projeto | A seleção é por projeto ativado | `node tools/workspace/cli.mjs use --name <n>` nesse projeto |
+| `root-inside-harness` | `SA_ENGAGEMENT_ROOT` aponta para dentro do harness | Use um diretório fora dele, ou o `engagements/` do harness |
+| `unknown runtime` / `bad-runtime` | Valor não suportado pelo comando | Use os valores listados no erro |
+| O modo voltou a Copilot | Trocar de engagement redefine o modo | Selecione o modo de novo |
 
-Full table: [`docs/handbook/operator/troubleshooting.md`](docs/handbook/operator/troubleshooting.md).
+Tabela completa: [`docs/handbook/operator/troubleshooting.md`](docs/handbook/operator/troubleshooting.md).
 
 <p align="center"><img src="images/assets/divider_neural.png" alt="———" width="100%" /></p>
 
-## Documentation
+## Documentação
 
-| Area | Path |
+| Área | Caminho |
 |---|---|
-| Start / Operator Handbook | [`docs/handbook/`](docs/handbook/) |
-| Pi Agent guide | [`docs/handbook/operator/pi-agent.md`](docs/handbook/operator/pi-agent.md) |
-| Antigravity guide | [`docs/handbook/operator/antigravity.md`](docs/handbook/operator/antigravity.md) |
+| Início / Handbook do operador | [`docs/handbook/`](docs/handbook/) |
+| Guia do Pi Agent | [`docs/handbook/operator/pi-agent.md`](docs/handbook/operator/pi-agent.md) |
+| Guia do Antigravity | [`docs/handbook/operator/antigravity.md`](docs/handbook/operator/antigravity.md) |
 | Runtimes (Pi / Antigravity / Claude) | [`docs/handbook/operator/runtimes.md`](docs/handbook/operator/runtimes.md) · [`adapters/`](adapters/) |
-| Readiness / MVP matrix | [`docs/handbook/operator/readiness.md`](docs/handbook/operator/readiness.md) |
-| Documentation index (current vs. historical) | [`docs/README.md`](docs/README.md) |
-| Caido live history monitor | [`docs/handbook/10-caido-live-history-monitor.md`](docs/handbook/10-caido-live-history-monitor.md) |
-| Capability roadmap | [`docs/architecture-review/08-capability-roadmap.md`](docs/architecture-review/08-capability-roadmap.md) |
-| Historical reviews (00–49) | [`docs/architecture-review/`](docs/architecture-review/) |
-
-The handbook and operator guides are written in Portuguese.
+| Prontidão / matriz do MVP | [`docs/handbook/operator/readiness.md`](docs/handbook/operator/readiness.md) |
+| Índice da documentação (atual vs. histórico) | [`docs/README.md`](docs/README.md) |
+| Monitor do histórico ao vivo do Caido | [`docs/handbook/10-caido-live-history-monitor.md`](docs/handbook/10-caido-live-history-monitor.md) |
+| Roadmap de capacidades | [`docs/architecture-review/08-capability-roadmap.md`](docs/architecture-review/08-capability-roadmap.md) |
+| Revisões históricas (00–49) | [`docs/architecture-review/`](docs/architecture-review/) |
 
 <p align="center"><img src="images/assets/divider_synapse_chip.png" alt="———" width="100%" /></p>
 
 ## Roadmap
 
-| State | Items |
+| Estado | Itens |
 |---|---|
-| **Validated real** | Bootstrap/resume, Scope Guard, Copilot, supervised Autopilot, read-only Caido (Claude Code / Omarchy); activation through Autopilot gate, resume and Bridge `http.inspect` (Pi, synthetic data); skill discovery, `AGENTS.md` loading and opening the dispatcher (Antigravity) |
-| **Tested offline** | Capability Bridge, active Caido (Replay/Findings), monitor, investigation records, forge, Pi adapter, engagement isolation, credential scope, CLI adapter trust boundary |
-| **Planned** | Whitebox ingestion (GitHub/Confluence/STRIDE), in-Caido evidence/reporting plugin, credential-store/live probe |
-| **Post-MVP / V2** | Importing/generating native Caido workflows (kept out of the mandatory MVP) |
-| **Validation pending** | Analysis on real in-scope traffic (data-gated, no product defect); Pi on real targets, interactive and with Caido; Antigravity past the permission block, following the dispatcher and a stateful Bridge path; approval-gated ops actually executed; Windows |
+| **Validado em real** | Bootstrap/retomada, Scope Guard, Copilot, Autopilot supervisionado, Caido somente leitura (Claude Code / Omarchy); da ativação ao gate do Autopilot, retomada e `http.inspect` da Bridge (Pi, dados sintéticos); descoberta de skills, carregamento do `AGENTS.md` e abertura do dispatcher (Antigravity) |
+| **Testado offline** | Capability Bridge, Caido ativo (Replay/Findings), monitor, investigation records, forge, adapter do Pi, isolamento de engagement, escopo de credenciais, fronteira de confiança do adapter CLI |
+| **Planejado** | Ingestão whitebox (GitHub/Confluence/STRIDE), plugin de evidências/relatórios no Caido, credential store/sonda ao vivo |
+| **Pós-MVP / V2** | Importar ou gerar workflows nativos do Caido (fora do MVP obrigatório) |
+| **Validação pendente** | Análise em tráfego real em escopo (depende de dados, sem defeito de produto); Pi em alvos reais, interativo e com Caido; Antigravity além do bloqueio de permissão, seguindo o dispatcher e com caminho de Bridge com estado; operações sob aprovação de fato executadas; Windows |
 
 <p align="center"><img src="images/assets/divider_code.png" alt="———" width="100%" /></p>
 
-## Limitations
+## Limitações
 
-- **Pi's validation is on synthetic data**, Linux, non-interactive. Interactive TUI, the `/trust` flow, real targets,
-  Caido, Windows and approval-gated ops actually executed are **NOT RUN**.
-- **Antigravity is partial and not homologated.** Skills, `AGENTS.md` and opening the dispatcher are verified, but the
-  agent following it is not, and headless shell commands are denied. A denied run still exits 0 with `status: SUCCESS` and an
-  empty response, so wrappers must inspect `denied_actions`. There is no stateful Bridge adapter, so `/investigar` is not
-  Bridge-protected there. Do not read "primary runtime" as "validated".
-- **The Bridge binds its own tools, not the agent.** Pi's `bash` is not sandboxed: it can read the central `.env`, edit the
-  contexts file or reach hosts directly. Containment needs OS-level isolation; SYNAPSE ships no sandbox.
-- **Isolation is by context, not by client data.** A selection cannot cross projects, but `list` and `--name` still see every
-  engagement under one `SA_ENGAGEMENT_ROOT`, and an exported `SA_ENGAGEMENT` selects only in a plain directory or at the harness root, with a note (in a project it must match the selection or commands refuse). Use one root per
-  client.
-- **Caido opt-in protects against project content, not a same-user shell.** The decision lives beside `.env`, outside the
-  project, so a repository can't grant itself the token. A process running as the same user can still read `.env` and edit that file.
-- **Pi's real `HOME`** also loads the user's own global skills alongside SYNAPSE.
-- **Analysis on real in-scope traffic** is pending an in-scope capture by the operator (data-gated).
-- **Active Caido operations** require a real authorized instance and per-action approval.
-- **Native Caido workflow generation** is post-MVP.
-- SYNAPSE assists **authorized** security testing **only**. It never treats observed traffic as authorization, and it
-  refuses destructive use, DoS, mass-targeting or detection evasion.
+- **A validação do Pi é em dados sintéticos**, Linux, não interativa. TUI interativa, fluxo `/trust`, alvos reais,
+  Caido, Windows e operações sob aprovação de fato executadas estão **NOT RUN**.
+- **O Antigravity é parcial e não homologado.** Skills, `AGENTS.md` e a abertura do dispatcher estão verificados, mas o
+  agente segui-lo não, e comandos de shell em headless são negados. Uma execução negada ainda sai com 0, `status: SUCCESS` e
+  resposta vazia, então wrappers têm de inspecionar `denied_actions`. Não há adapter de Bridge com estado, portanto `/investigar` não tem
+  proteção da Bridge lá. Não leia "runtime primário" como "validado".
+- **A Bridge restringe as próprias ferramentas, não o agente.** O `bash` do Pi não tem sandbox: pode ler o `.env` central, editar o
+  arquivo de contextos ou alcançar hosts diretamente. Contenção exige isolamento no nível do sistema operacional; o SYNAPSE não traz sandbox.
+- **O isolamento é por contexto, não por dados de cliente.** Uma seleção não atravessa projetos, mas `list` e `--name` ainda veem todos os
+  engagements sob um mesmo `SA_ENGAGEMENT_ROOT`, e um `SA_ENGAGEMENT` exportado seleciona só em diretório comum ou na raiz do harness, com aviso (em projeto, tem de coincidir com a seleção, ou os comandos recusam). Use um root por
+  cliente.
+- **O opt-in do Caido protege contra conteúdo do projeto, não contra um shell do mesmo usuário.** A decisão fica ao lado do `.env`, fora do
+  projeto, então um repositório não consegue conceder o token a si mesmo. Um processo rodando como o mesmo usuário ainda pode ler o `.env` e editar esse arquivo.
+- **O `HOME` real do Pi** carrega também as skills globais do usuário junto com o SYNAPSE.
+- **A análise em tráfego real em escopo** depende de uma captura em escopo feita pelo operador (depende de dados).
+- **Operações ativas no Caido** exigem uma instância real autorizada e aprovação por ação.
+- **A geração de workflows nativos do Caido** é pós-MVP.
+- O SYNAPSE apoia **somente** testes de segurança **autorizados**. Nunca trata tráfego observado como autorização e
+  recusa uso destrutivo, DoS, ataque em massa ou evasão de detecção.
 
 <p align="center"><img src="images/assets/divider_neural.png" alt="———" width="100%" /></p>
 
-## Development
+## Desenvolvimento
 
-- **Add a technique/blueprint:** follow `references/template-technique.md`; keep the KB at 127 (or update
-  `manifest-h0.json` + baseline and run the validator again).
-- **Add a flow:** `workflows/flows-*.md`, wired through the dispatcher.
-- **Add a capability:** extend the Bridge (`BRIDGE_OPS`), classify Class R vs. Class A, add the gate and a
-  deterministic test. Never bypass the Scope Guard or the Approval Gate.
-- **Conventions:** one dispatcher; the Bridge is the only outward surface; modes grant no capability; every claim is
-  labeled by its evidence state. Run the full suite + validator before any commit.
+- **Adicionar técnica/blueprint:** siga `references/template-technique.md`; mantenha a KB em 127 (ou atualize
+  `manifest-h0.json` + baseline e rode o validador de novo).
+- **Adicionar flow:** `workflows/flows-*.md`, ligado pelo dispatcher.
+- **Adicionar capacidade:** estenda a Bridge (`BRIDGE_OPS`), classifique em Classe R ou Classe A, adicione o gate e um
+  teste determinístico. Nunca contorne o Scope Guard nem o Approval Gate.
+- **Convenções:** um único dispatcher; a Bridge é a única superfície externa; modos não concedem capacidade; toda afirmação é
+  rotulada pelo seu estado de evidência. Rode a suíte completa + validador antes de qualquer commit.
 
 ---
 
@@ -657,4 +655,4 @@ The handbook and operator guides are written in Portuguese.
   <img src="images/assets/icon_shield.png" alt="" width="34" />
   &nbsp;<strong>SYNAPSE</strong> — Connect Intelligence. Orchestrate Security.
 </p>
-<p align="center"><sub>Formerly SecurityAuditor / HackBot · runtime-agnostic · supervised autonomy · authorized testing only</sub></p>
+<p align="center"><sub>Antigo SecurityAuditor / HackBot · agnóstico de runtime · autonomia supervisionada · somente testes autorizados</sub></p>
