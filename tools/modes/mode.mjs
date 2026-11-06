@@ -8,7 +8,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { STATE_DIR, assertInsideEngagement, WorkspaceError } from "../workspace/engagement.mjs";
+import { STATE_DIR, assertInsideEngagement, sanitizeName, WorkspaceError } from "../workspace/engagement.mjs";
 
 export class ModeError extends Error { constructor(code, msg) { super(msg); this.code = code; this.name = "ModeError"; } }
 
@@ -29,7 +29,7 @@ export function modeEnvelope(mode) {
 }
 
 function modeFile(engagement, sessionId) {
-  const name = sessionId ? `mode-${String(sessionId)}.json` : "mode.json";
+  const name = sessionId ? `mode-${sanitizeName(String(sessionId))}.json` : "mode.json"; // same key as the active pointer
   return assertInsideEngagement(engagement.dir, path.join(STATE_DIR, name)); // confined to the engagement
 }
 

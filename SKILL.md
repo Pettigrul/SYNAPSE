@@ -1,21 +1,16 @@
 ---
 name: security-auditor
 description: >
-  SYNAPSE — modular, runtime-portable offensive security harness (Pi Agent, Antigravity,
-  Claude Code). Use when the user mentions pentest, security audit, vuln research,
-  living-off-the-land (LotL), Windows enumeration, Active Directory, privilege escalation,
-  lateral movement, credential access, or a specific attack class (XSS, IDOR, SSRF, auth
-  bypass, RCE, etc.). Operates under a native-tooling doctrine (native built-ins first —
-  Windows PowerShell / cmd / LOLBins — escalating to Python, Go, or Node.js only when
-  justified), with an engagement workspace, scope guard, capability bridge, and Caido
-  integration. Also triggers on: "what do I know about X" / "how to enumerate X with native
-  tools"; workflow management ("start engagement", "load scope", "status", "what next",
-  "resume", "save checkpoint", "compact notes"); intake ("process my intake", "save [URL]",
-  "note:", "learn this", "add technique"); report lifecycle (write, revise, submit, track
-  verdicts); chaos / forge micro-tools; code review ("review code", "find sinks", "map
-  attack surface"); proxy / Caido sync; cross-engagement technique search; or anything else
-  related to offensive security assessment or managing the security-techniques knowledge
-  base. Also triggers on equivalent phrasing in other languages including PT-BR.
+  SYNAPSE — runtime-portable offensive security harness (Pi Agent, Antigravity, Claude Code). Use when
+  the user mentions pentest, security audit, vuln research, living-off-the-land (LotL), Windows
+  enumeration, Active Directory, privilege escalation, lateral movement, credential access, or an
+  attack class (XSS, IDOR, SSRF, auth bypass, RCE, etc.). Native tooling first, with an engagement
+  workspace, scope guard, capability bridge and Caido integration. Also triggers on: "what do I know
+  about X"; workflow ("start engagement", "load scope", "status", "what next", "resume", "save
+  checkpoint"); intake ("process my intake", "save [URL]", "note:", "add technique"); reports (write,
+  revise, submit, verdicts); chaos / forge micro-tools; code review ("find sinks", "map attack
+  surface"); proxy / Caido sync; technique search; KB management. Also triggers on equivalent phrasing
+  in other languages including PT-BR.
 ---
 
 # SYNAPSE

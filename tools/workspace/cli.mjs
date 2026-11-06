@@ -8,9 +8,9 @@
 // Usage:
 //   node tools/workspace/cli.mjs init     --name <n> [--modality blackbox|graybox|whitebox] [--project-id <id>]
 //   node tools/workspace/cli.mjs scope    --name <n> --file <scope.md>        # install & validate scope.md
-//   node tools/workspace/cli.mjs associate--name <n> --project-id <id> [--project-name <pn>] [--force]
+//   node tools/workspace/cli.mjs associate --name <n> --project-id <id> [--project-name <pn>] [--force]
 //   node tools/workspace/cli.mjs use      --name <n>                           # SELECT active engagement (session)
-//   node tools/workspace/cli.mjs bootstrap [--name <n>] [--runtime claude|agents|both]  # restore 9 dirs + operational docs (idempotent)
+//   node tools/workspace/cli.mjs bootstrap [--name <n>] [--runtime claude|claude-code|agents|antigravity|pi|both]  # restore 9 dirs + operational docs (idempotent)
 //   node tools/workspace/cli.mjs next      [--name <n>]                          # next eligible runtime task (Flow 11 rule; read-only)
 //   node tools/workspace/cli.mjs active                                        # show the current active selection
 //   node tools/workspace/cli.mjs clear                                         # clear the session selection
@@ -28,10 +28,12 @@ import {
   initEngagement, loadEngagement, associateCaidoProject, selectEngagement,
   validateScope, resolveProjectId, sanitizeName, WorkspaceError,
   setActiveEngagement, getActiveEngagement, clearActiveEngagement, listEngagements,
-  bootstrapEngagement, parseTasks,
+  bootstrapEngagement, parseTasks, resolveSessionId, findActivatedProject, assertRootOutsideHarness,
 } from "./engagement.mjs";
 import { loadProjectEnv } from "../preflight/env-loader.mjs";
 import { createBridge } from "../web-runtime/bridge.mjs";
+import { statusActivation } from "../activation/activate.mjs";
+import { clearMode } from "../modes/mode.mjs";
 
 if (!process.env.SA_SKIP_ENV_FILE) loadProjectEnv(); // populate process.env from <repo>/.env (environment wins; SA_SKIP_ENV_FILE=1 skips it, for hermetic automation/tests)
 
@@ -45,9 +47,9 @@ function parse(argv) {
   return a;
 }
 const rootOf = (a) => a.root || process.env.SA_ENGAGEMENT_ROOT || null;
-const sessionOf = () => process.env.SA_SESSION_ID || null;
+const sessionOf = () => resolveSessionId();
 function die(msg, code = 2) { console.error(`error: ${msg}`); process.exit(code); }
-function needRoot(a) { const r = rootOf(a); if (!r) die("SA_ENGAGEMENT_ROOT not set (or pass --root) — base dir for engagements, OUTSIDE this repo"); return r; }
+function needRoot(a) { const r = rootOf(a); if (!r) die("SA_ENGAGEMENT_ROOT not set (or pass --root) — base dir for engagements, OUTSIDE this repo"); return assertRootOutsideHarness(r); }
 // Resolve the engagement name for a read/show command: explicit --name, else the ACTIVE selection
 // (SA_ENGAGEMENT override > session pointer). NEVER guesses — dies with an actionable message if none.
 function resolveName(a, root) {
@@ -58,8 +60,11 @@ function resolveName(a, root) {
   die(`no active engagement selected — run: node tools/workspace/cli.mjs use --name <n>` + (cands.length ? ` (available: ${cands.join(", ")})` : " (none exist yet; create with: init --name <n>)"));
 }
 
+const USAGE = fs.readFileSync(new URL(import.meta.url), "utf8").split("\n").filter((l) => /^\/\/\s+node tools\/workspace\/cli\.mjs /.test(l)).map((l) => l.slice(3)).join("\n");
+
 async function main() {
   const a = parse(process.argv.slice(2));
+  if (process.argv.slice(2).some((x) => x === "--help" || x === "-h")) { console.log(USAGE); return; } // never run a subcommand for --help
 
   if (a.cmd === "init") {
     const root = needRoot(a); if (!a.name || a.name === true) die("--name required");
@@ -107,6 +112,7 @@ async function main() {
     }
     console.log(`active engagement set: ${r.name}  [${r.dir}]  (project: ${r.caidoProjectId ? `${r.caidoProjectId} (${r.caidoProjectSource})` : "NONE — associate one"})`);
     if (r.switched) {
+      clearMode({ engagement: { dir: r.dir, name: r.name }, sessionId: sessionOf() }); // documented in /modo: a switch returns to Copilot
       console.log(`\n⚠ switched from '${r.previous}'. The previous engagement's operational context is now invalidated for NEW operations.`);
       console.log(`  This command does NOT purge any history already loaded in the current LLM session. To truly drop the`);
       console.log(`  prior engagement's context, start a CLEAN session (or restart the agent) before continuing.`);
@@ -138,7 +144,9 @@ async function main() {
     const root = needRoot(a);
     const name = resolveName(a, root);
     const sel = selectEngagement({ root, name, envProjectId: process.env.CAIDO_PROJECT_ID || null });
-    const runtime = (a.runtime && a.runtime !== true) ? a.runtime : "claude";
+    // No flag: follow the activation marker of the cwd project (skills call plain `bootstrap`).
+    const declared = statusActivation({ projectDir: findActivatedProject() || process.cwd() }).runtimes || [];
+    const runtime = (a.runtime && a.runtime !== true) ? a.runtime : declared.length > 1 ? "both" : (declared[0] || "claude");
     const rep = bootstrapEngagement({ dir: sel.dir, name: sel.name }, { runtime, operator: process.env.USER || null });
     const isNew = rep.created.length > 0 || rep.dirsCreated.length > 0;
     console.log(`bootstrap ${isNew ? "prepared" : "verified (already complete)"}: ${sel.name}  [${sel.dir}]`);
@@ -184,7 +192,7 @@ async function main() {
     console.log(`  state dir     ${sel.statePaths.dir}`);
     console.log(`  evidence dir  ${sel.evidenceDir}  (persistent audit evidence; created on first write)`);
     console.log(`\nExecution Context fragment (operator builds the ctx; projectId comes from the engagement):`);
-    console.log("  " + JSON.stringify({ investigationId: `eng:${sel.name}`, scope: "<contents of scope.md>", allowedCapabilities: ["caido", "copilot", "investigation"], caido: { baseUrl: "$CAIDO_BASE_URL", token: "$CAIDO_TOKEN", projectId: sel.caidoProjectId || null } }));
+    console.log("  " + JSON.stringify({ [`eng:${sel.name}`]: { scope: { allowHosts: ["<hosts from ## In Scope of scope.md>"] }, allowedCapabilities: ["caido", "copilot", "investigation"], approvals: [], caido: { baseUrl: "<CAIDO_BASE_URL value>", token: "<CAIDO_TOKEN value: env refs are NOT expanded>", projectId: sel.caidoProjectId || null }, evidenceDir: sel.evidenceDir } }));
     console.log(`\nMake it active for this session:  node tools/workspace/cli.mjs use --name ${sel.name}`);
     console.log(`(automation/non-interactive alternative: export SA_ENGAGEMENT=${sel.name})`);
     return;

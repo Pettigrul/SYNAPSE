@@ -12,6 +12,8 @@
 //  - Whitebox access is gated by code (whitebox-guard.mjs) + audited, NOT by
 //    prompt text. See the handbook for the residual tool-layer limitation.
 
+import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import path from "node:path";
 import { decideWhiteboxAccess, WHITEBOX_DIR } from "./whitebox-guard.mjs";
@@ -335,12 +337,42 @@ export function associateCaidoProject(engagement, { projectId, projectName = nul
 // ---------------------------------------------------------------------------
 export const STATE_ROOT_DIR = ".sa-state"; // under SA_ENGAGEMENT_ROOT; holds the active pointer (no secrets)
 
+// SA_SESSION_ID wins. Otherwise an ACTIVATED project gets a stable session derived from its marker path, so
+// separate non-interactive processes agree on one pointer and projects sharing a root stay isolated. Same
+// pointer files, no new state. No marker => null => the existing default pointer (unchanged behavior).
+export function findActivatedProject(cwd = process.cwd(), env = process.env) {
+  // The cwd is physical: inside a linked dir (cd tools) only the shell's PWD still shows the project.
+  // The physical path comes second: a link from elsewhere into the project must still find its marker.
+  const starts = env.PWD && realpathLenient(env.PWD) === realpathLenient(cwd) ? [env.PWD, cwd] : [cwd];
+  for (const start of starts) {
+    for (let d = path.resolve(start); ; d = path.dirname(d)) {
+      if (fs.existsSync(path.join(d, ".hackbot-activation.json"))) return d;
+      if (path.dirname(d) === d) break;
+    }
+  }
+  return null;
+}
+export function resolveSessionId({ env = process.env, cwd = process.cwd() } = {}) {
+  if (env.SA_SESSION_ID) return env.SA_SESSION_ID;
+  const d = findActivatedProject(cwd, env);
+  return d ? `prj-${createHash("sha256").update(realpathLenient(d)).digest("hex").slice(0, 12)}` : null;
+}
+
 function activePointerPath(root, sessionId) {
   const fname = sessionId ? `active-${sanitizeName(String(sessionId))}.json` : "active.json";
   return path.join(root, STATE_ROOT_DIR, fname);
 }
 function readActivePointer(root, sessionId) {
   try { return JSON.parse(fs.readFileSync(activePointerPath(root, sessionId), "utf8")); } catch { return null; }
+}
+
+// The documented contract: engagement data lives OUTSIDE the harness, or in its git-ignored engagements/ (Layout A).
+// Symlink-resolved, so a root reached through an activated project's links is caught too.
+export function assertRootOutsideHarness(root) {
+  const H = realpathLenient(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".."));
+  const r = realpathLenient(path.resolve(root));
+  if ((r === H || r.startsWith(H + path.sep)) && !(r === path.join(H, "engagements") || r.startsWith(path.join(H, "engagements") + path.sep))) throw new WorkspaceError("root-inside-harness", `SA_ENGAGEMENT_ROOT resolves inside the central harness: ${r}`);
+  return root;
 }
 
 // Candidate engagements under a root (for listing + actionable "not found" messages).
@@ -580,6 +612,7 @@ function engTemplates(name) {
 // Returns a report of what was created / already present / self-healed. Throws
 // WorkspaceError("bad-scope") on an existing-but-invalid scope.md (controlled failure).
 export function bootstrapEngagement(engagement, { runtime = "claude", operator = null } = {}) {
+  if (!["claude", "claude-code", "agents", "antigravity", "pi", "both"].includes(runtime)) throw new WorkspaceError("bad-runtime", `unknown runtime '${runtime}' (valid: claude|claude-code|agents|antigravity|pi|both)`);
   const engDir = engagement && engagement.dir;
   if (!engDir || detectWorkspace(engDir) === "empty") {
     throw new WorkspaceError("not-found", "bootstrap requires an existing engagement (run init first)");
@@ -628,7 +661,7 @@ export function bootstrapEngagement(engagement, { runtime = "claude", operator =
 
   // 4) Runtime project-instructions file(s) + load-bearing NATIVE-TOOLING self-heal.
   const rtFiles = runtime === "both" ? ["CLAUDE.md", "AGENTS.md"]
-    : (runtime === "agents" || runtime === "antigravity") ? ["AGENTS.md"] : ["CLAUDE.md"];
+    : ["agents", "antigravity", "pi"].includes(runtime) ? ["AGENTS.md"] : ["CLAUDE.md"];
   for (const rf of rtFiles) {
     const abs = confineWithin(engDir, rf);
     if (!fs.existsSync(abs)) { fs.writeFileSync(abs, runtimeInstructions(name)); report.created.push(rf); }

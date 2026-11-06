@@ -7,6 +7,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { collectEnv } from "./preflight.mjs";
+import { statusActivation } from "../activation/activate.mjs";
 
 // Discoverable operational skills = dirs under <root>/.claude/skills that carry a SKILL.md. INFORMATIONAL only
 // (a troubleshooting aid for R5 — it does NOT prove Claude Code's live slash-command discovery, which happens
@@ -26,6 +27,7 @@ export function runDoctor(env) {
     node: env.node, platform: env.platform, windows: !!env.windows, root: env.root,
     runtimes: Object.entries(env.runtimes).filter(([, v]) => v).map(([k]) => k),
     adapterDocs: env.adapters,
+    activation: (() => { const s = statusActivation({ projectDir: process.cwd() }); return s.activated ? `${s.projectDir} (declared: ${s.runtimes.join(", ")}; healthy: ${s.healthy})` : "(cwd is not an activated project)"; })(),
     claudeSkills: skills.length ? `${skills.length}: ${skills.join(", ")}` : "(none under .claude/skills)",
     kb: { categories: env.kb.skillDirs, validator: env.kb.validator, manifest: env.kb.manifest },
     policies: env.policies,
@@ -56,6 +58,8 @@ function hints(env) {
   if (env.evidence.source === "engagement" && !env.evidence.writable) h.push(`Engagement dir not writable — cannot create ${env.evidence.dir}; fix permissions on the engagement directory.`);
   if (!env.evidence.dir) h.push("No evidence destination — persistent evidence (screenshots, captures) requires an active engagement; select one: node tools/workspace/cli.mjs use --name <name>.");
   if (env.evidence.source === "legacy-env") h.push("Using legacy SA_EVIDENCE_DIR (no active engagement) — prefer per-engagement evidence by selecting an engagement; SA_EVIDENCE_DIR never overrides an active engagement.");
+  if (env.runtimes.pi) h.push("Pi: skills run as /skill:<name> (e.g. /skill:modo). Project .pi/settings.json is trust-gated: use `pi -a` or /trust; print/json/rpc modes skip it otherwise.");
+  if (env.runtimes.antigravity) h.push("Antigravity: run `agy` from an activated project; AGENTS.md and .agents/skills load from there, and /skills lists them.");
   if (env.runtimes.claudeCode) h.push("Slash commands use each skill's EXACT name (e.g. /modo, /iniciar-pentest). Claude Code discovers .claude/skills/ at SESSION START — if a skill is missing, start a fresh session to refresh discovery (the 'claudeSkills' fact lists what is installed).");
   return h;
 }

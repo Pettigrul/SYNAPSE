@@ -5,7 +5,7 @@
 
 **Legenda:** `IMPLEMENTED` (existe em código) · `TESTED OFFLINE` (teste determinístico executado) ·
 `VALIDATED REAL` (comprovado em runtime/instância real) · `NOT RUN` (não executado nesta fase) ·
-`BLOCKED` (depende de requisito ausente) · `PLANNED` (no roadmap, não implementado).
+`BLOCKED` (depende de requisito ausente ou recusa do runtime) · `PARTIAL` (só parte comprovada) · `PLANNED` (no roadmap, não implementado).
 
 | Componente | Situação | Evidência / nota |
 |------------|----------|------------------|
@@ -30,8 +30,11 @@
 | **S4 — Aceitação operacional real (Claude Code + Omarchy + Caido)** | **PASS (integração e experiência)** · análise in-scope **NO DATA** | R1–R7 **VALIDATED REAL** (R5 confirmado pelo operador); Caido read-only **VALIDATED REAL** (conexão/History **21 reqs lidos integralmente**/paginação/HTTPQL/campos/proveniência); leitura **desacoplada do scope** ([42](../../architecture-review/42-caido-readonly-scope-decouple.md)); bootstrap/Copilot/Autopilot (2 transições + gate) reais; análise in-scope **NO DATA** (captura sem tráfego do alvo); Validador 127/127 — ver [41](../../architecture-review/41-s4-real-acceptance.md) |
 | **F8 — Leitura Caido desacoplada do Scope Guard (read-only)** | IMPLEMENTED · TESTED OFFLINE · **VALIDATED REAL** | `bridge._inScope` + `caido.history`/`caido.request` anotam (não retêm); Copilot anota; **ativo segue gated + isolamento de projeto**; `test-caido` 21/21 (10/10b/10c), copilot 24/24; leitura real de 21 reqs — [42](../../architecture-review/42-caido-readonly-scope-decouple.md) |
 | **P1 — Consolidação semântica (skills/pentest/investigação)** | IMPLEMENTED · TESTED OFFLINE | `test-skills.mjs` (contrato das skills) |
-| **P2 — Ativação local por projeto** | IMPLEMENTED · TESTED OFFLINE · **runtime ao vivo NOT RUN** | `tools/activation/`, **18/18** |
-| **P3 — Modos (Copilot/Autopilot supervisionado)** | IMPLEMENTED · TESTED OFFLINE (A/B/C) · **D parcial em S4: 2 transições em lab sintético; com dados reais NOT RUN** | `tools/modes/`, **18/18**; Autopilot **não** validado ponta a ponta |
+| **P2 — Ativação local por projeto** | IMPLEMENTED · TESTED OFFLINE · **VALIDATED REAL** (Pi e Antigravity, dados sintéticos) | `tools/activation/`, `test-activation` **18/18**, `test-runtime-links` **44/44**; links por runtime, `--runtime` com lista |
+| **P3 — Modos (Copilot/Autopilot supervisionado)** | IMPLEMENTED · TESTED OFFLINE (A/B/C) · **D parcial: lab sintético no Claude Code (S4) e no Pi; com dados reais NOT RUN** | `tools/modes/`, **18/18**; Autopilot **não** validado ponta a ponta |
+| **Aceitação real — Pi** | **VALIDATED REAL em dados sintéticos** · TUI, `/trust`, alvos reais, Caido, Windows e ops sob aprovação executadas **NOT RUN** | Pi 1.4.0, `openai-codex/gpt-6-luna --thinking low`, Linux, `--mode json`: cenários 1-14 PASS em uma única passada, com S12 rejulgado do log (10 execuções, cerca de US$ 0,05); uma passada anterior falhou em S12, o que levou ao `AGENTS.md` atual. `tools/acceptance/runtime-acceptance.mjs`; ver [guia](pi-agent.md) |
+| **Aceitação real — Antigravity** | **PARTIAL** · não homologado · interativo **NOT RUN** | agy 1.5.1, `gemini-3.8-flash-low`: 1 PASS; 2 **FAIL** (`AGENTS.md` carregado, dispatcher não aberto); 3-11 **BLOCKED** sem interação; 12 PASS (só falha de leitura); 13 PARTIAL (só pela CLI). Sem adapter de Bridge; ver [guia](antigravity.md) |
+| **Suites offline** | IMPLEMENTED · TESTED OFFLINE | 31 suites + validador 127/127; métricas separadas da aceitação real |
 | **H2d-F2 — Credential-store/auto-config/probe vivo** | **PLANNED** (não iniciado) | — |
 | **H3 — Piloto operacional integrado** | **NOT STARTED** | aceite depende da **integração Caido real** (History/Monitor/Copilot/Replay/Automate/Findings) + smoke + Record com proveniência; **não** depende de F5b |
 
@@ -40,7 +43,7 @@
 - O **núcleo e os módulos Caido existem e passam em testes offline**; o que falta para o MVP completo é a
   **integração Caido REAL** e a **aceitação agêntica (F4b-2)** em laboratório autorizado — ambas **NOT RUN**.
 - **F5b (workflows nativos) permanece pós-MVP/V2** e **não bloqueia** H3.
-- **Pi/Antigravity** não estão homologados em runtime (ver [runtimes.md](runtimes.md)).
+- **Pi** tem validação real só em dados sintéticos; **Antigravity** é parcial. Nenhum está homologado para alvo real (ver [runtimes.md](runtimes.md)).
 - **Caido na Omarchy (H2d-F2):** conectividade real **comprovada** para descoberta read-only; a cadeia
   History→Monitor→Copilot→Record está **BLOCKED** só por configuração de engagement (operador desbloqueia).
   Homologação **Windows corporativa** é procedimento separado (pendente).

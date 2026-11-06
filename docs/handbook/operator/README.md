@@ -13,6 +13,8 @@
 | [Configuração](configuration.md) | `.env`, diretórios e persistência, precedência |
 | [Engagements & Runtimes](runtimes.md) | Layouts A/B/C e matriz de portabilidade (Claude Code/Pi/Antigravity, Linux/Windows) |
 | [Catálogo de skills](skills-catalog.md) | Cada skill: finalidade, pré-requisitos, exemplos, o que executa, limitações, risco |
+| [Pi Agent](pi-agent.md) | Instalar, ativar, operar, diagnosticar, atualizar e desativar no Pi |
+| [Antigravity](antigravity.md) | O mesmo com o `agy`, incluindo o bloqueio de permissão e as opções do operador |
 | [Modos operacionais](modes.md) | Copilot × Autopilot supervisionado |
 | [Caido](caido.md) | URL/GraphQL, token, descobrir UUID, associar, diagnosticar |
 | [Readiness / MVP](readiness.md) | Situação real de cada componente (IMPLEMENTED/TESTED OFFLINE/VALIDATED REAL/NOT RUN/BLOCKED/PLANNED) |
@@ -41,8 +43,9 @@
 
 ## Lacunas conhecidas (ver [readiness.md](readiness.md))
 
-- **Autopilot real ponta-a-ponta:** NOT RUN (sem campanha com LLM nesta fase).
-- **Pi / Antigravity:** só contrato/arquivos — **não homologados** em runtime.
-- **Reconhecimento ao vivo das skills** pela app Claude Code: NOT RUN (validado só na camada de arquivos).
+- **Autopilot sobre alvo real:** NOT RUN. Validado só em lab sintético (Claude Code em S4; Pi, cadeia de 2 tarefas seguras até o gate Class A).
+- **Pi:** VALIDATED REAL em dados sintéticos, não interativo. TUI, `/trust`, alvos reais, Caido e Windows: NOT RUN.
+- **Antigravity:** PARCIAL, **não homologado**. Skills e `AGENTS.md` carregam; seguir o dispatcher não está verificado, e comandos de shell sem interação são negados.
+- **Operações sob aprovação de fato executadas:** NOT RUN em qualquer runtime.
 - **Windows corporativo sem symlink:** ativação local (P2) limitada — ver [runtimes.md](runtimes.md).
 - **Workflows nativos Caido (F5b):** pós-MVP/V2.

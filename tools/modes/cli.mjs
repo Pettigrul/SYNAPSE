@@ -10,13 +10,13 @@
 // no operation and grants no capability.
 
 import { getMode, setMode, clearMode, modeEnvelope, MODES, DEFAULT_MODE, BRIDGE_CAPABILITIES, ModeError } from "./mode.mjs";
-import { getActiveEngagement, selectEngagement, WorkspaceError } from "../workspace/engagement.mjs";
+import { getActiveEngagement, selectEngagement, resolveSessionId, WorkspaceError } from "../workspace/engagement.mjs";
 import { loadProjectEnv } from "../preflight/env-loader.mjs";
 
 if (!process.env.SA_SKIP_ENV_FILE) loadProjectEnv();
 
 const rootOf = () => process.env.SA_ENGAGEMENT_ROOT || null;
-const sessionOf = () => process.env.SA_SESSION_ID || null;
+const sessionOf = () => resolveSessionId();
 function die(msg, code = 2) { console.error(`error: ${msg}`); process.exit(code); }
 
 function resolveActive() {
@@ -57,7 +57,7 @@ function printStatus() {
   console.log(`    - Autopilot is SUPERVISED only: it may plan/propose toward a bounded objective, but every`);
   console.log(`      Class A action passes Scope Guard + capabilities + Approval Gate + budget/limits + cancel.`);
   console.log(`    - Continuous/durable/scheduled autopilot is POST-MVP (not implemented).`);
-  console.log(`    - Real agentic end-to-end Autopilot is NOT validated (lab run = NOT RUN); readiness D pending.`);
+  console.log(`    - Real agentic Autopilot: bounded chain validated on Pi with synthetic data only; Antigravity headless BLOCKED by shell permissions; real targets NOT RUN.`);
   return 0;
 }
 
@@ -77,6 +77,7 @@ function setActive(mode) {
 
 function main() {
   const cmd = process.argv[2] || "status";
+  if (process.argv.includes("--help") || process.argv.includes("-h")) { console.log("Usage: cli.mjs status|copilot|autopilot|clear"); return 0; } // never change mode for --help
   if (cmd === "status") return printStatus();
   if (MODES.includes(cmd)) return setActive(cmd);
   if (cmd === "clear") { const { engagement } = resolveActive(); if (!engagement) die("no active engagement"); clearMode({ engagement, sessionId: sessionOf() }); console.log(`mode cleared → default (${DEFAULT_MODE})`); return 0; }

@@ -12,6 +12,8 @@
 //
 // TRUST: the Execution Context is read from an operator-written JSON file named by
 // SECAUDIT_BRIDGE_CONTEXTS — never from the LLM. Absent/invalid => tools refuse (no context).
+// This binds the tools, not the agent: Pi's bash can still edit that file or reach hosts, so real
+// containment needs OS-level isolation (documented limitation).
 import { createSecurityAuditorExtension } from "./extension.mjs";
 import { defineTool } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";

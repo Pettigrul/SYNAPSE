@@ -1,0 +1,4 @@
+{
+  "skills": ["../SKILL.md", "../.claude/skills"],
+  "extensions": ["../tools/web-runtime/adapters/pi/extension-pi.mjs"]
+}

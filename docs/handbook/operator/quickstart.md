@@ -11,7 +11,8 @@ cd ~/harness/SYNAPSE
 
 # 2. .env (config persistente da INSTÂNCIA) — ver configuration.md
 cp .env.example .env
-#   edite: CAIDO_BASE_URL, CAIDO_TOKEN, SA_ENGAGEMENT_ROOT (externo ao repo)
+#   edite: CAIDO_BASE_URL, CAIDO_TOKEN, SA_ENGAGEMENT_ROOT (externo ao repo; dentro dele só engagements/ é aceito)
+#   todo projeto ativado carrega este .env (variáveis exportadas vencem)
 
 # 3. CAIDO: instância + autenticação — ver caido.md
 #   GraphQL em <CAIDO_BASE_URL>/graphql, header Authorization: Bearer <token> (PAT 'caido_…' ou access token)
@@ -28,13 +29,17 @@ node tools/workspace/cli.mjs projects                                  # lista U
 node tools/workspace/cli.mjs associate --name acme --project-id <uuid>
 
 # 7. ATIVAÇÃO LOCAL (opcional — Layout C; só se for operar de DENTRO de um projeto externo)
-node tools/activation/cli.mjs activate --project ~/pentests/acme       # linka o harness central (symlinks)
+node tools/activation/cli.mjs activate --project ~/pentests/acme --runtime pi   # linka o harness central (symlinks)
+#   --runtime claude-code|pi|antigravity|all, ou lista: pi,antigravity. Sem a flag, reativar mantém o marcador
 
 # 8. INICIAR o runtime escolhido na pasta desejada (raiz central OU projeto ativado)
+#   Pi:          pi -a --provider openai-codex --model gpt-6-luna --thinking low   (skills: /skill:<nome>; ver pi-agent.md)
+#   Antigravity: agy   (skills: /<nome>; comandos de shell sem interação são negados; ver antigravity.md)
 #   Claude Code: abra a pasta; as skills de .claude/skills são descobertas (ver runtimes.md)
 
 # 9. SELECIONAR o engagement da sessão (explícito; nunca adivinhado)
-node tools/workspace/cli.mjs use --name acme       # ou /usar-engagement acme
+node tools/workspace/cli.mjs use --name acme       # ou /usar-engagement acme (Pi: /skill:usar-engagement)
+#   em projeto ativado a seleção é por projeto; SA_SESSION_ID é opcional
 
 # 10. DOCTOR + PREFLIGHT (determinístico, offline, sem LLM)
 node tools/preflight/cli.mjs doctor
@@ -47,7 +52,7 @@ node tools/modes/cli.mjs copilot        # ou: autopilot   (ou /modo copilot|auto
 # 12. INICIAR / RETOMAR o pentest (roteia ao dispatcher + flows; respeita o modo)
 #   /iniciar-pentest
 #   → prepara AUTOMATICAMENTE a estrutura operacional ANTES do recon (nove diretórios +
-#     session.md/toDoList.md/cc*.md/.config/CLAUDE.md), idempotente e sem sobrescrever.
+#     session.md/toDoList.md/cc*.md/.config + CLAUDE.md ou AGENTS.md, conforme o marcador), idempotente e sem sobrescrever.
 #     Equivale a: node tools/workspace/cli.mjs bootstrap   (você NÃO precisa rodar à mão)
 
 # 13. INVESTIGAÇÃO técnica pontual → Investigation Record
@@ -58,7 +63,7 @@ node tools/modes/cli.mjs copilot        # ou: autopilot   (ou /modo copilot|auto
 #   <SA_ENGAGEMENT_ROOT>/acme/2-Findings/ , 1-Reports/  (buckets do workspace)
 
 # 15. ENCERRAR / TROCAR com segurança
-node tools/workspace/cli.mjs use --name outro-engagement   # avisa troca → inicie uma sessão LIMPA
+node tools/workspace/cli.mjs use --name outro-engagement   # avisa troca, volta o modo a copilot → inicie uma sessão LIMPA
 node tools/activation/cli.mjs deactivate --project ~/pentests/acme   # se tiver ativado (preserva dados)
 ```
 

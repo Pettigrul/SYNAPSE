@@ -12,7 +12,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadEngagement, resolveProjectId, getActiveEngagement, EVIDENCE_DIR } from "../workspace/engagement.mjs";
+import { loadEngagement, resolveProjectId, getActiveEngagement, resolveSessionId, validateScope, EVIDENCE_DIR } from "../workspace/engagement.mjs";
 
 export const PREFLIGHT_SCHEMA = 1;
 export const VERDICTS = Object.freeze(["READY", "DEGRADED", "BLOCKED"]);
@@ -23,6 +23,11 @@ export const STATUSES = Object.freeze(["ok", "degraded", "missing", "error", "pl
 
 function repoRoot() { return path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../.."); }
 function exists(root, rel) { try { return fs.existsSync(path.join(root, rel)); } catch { return false; } }
+function onPath(env, platform, ...names) {
+  const exts = platform === "win32" ? String(env.PATHEXT || ".EXE;.CMD;.BAT").split(";") : [""];
+  return String(env.PATH || env.Path || "").split(path.delimiter).filter(Boolean)
+    .some((d) => names.some((n) => exts.some((x) => { try { return fs.statSync(path.join(d, n + x)).isFile(); } catch { return false; } })));
+}
 function countDirs(root, rel) { try { return fs.readdirSync(path.join(root, rel), { withFileTypes: true }).filter((d) => d.isDirectory()).length; } catch { return 0; } }
 
 // ---- environment snapshot (the only impure part) ---------------------------
@@ -43,7 +48,8 @@ export function collectEnv({ root = repoRoot(), env = process.env, platform = os
     kb: { skillDirs: countDirs(root, "skills"), validator: exists(root, "docs/architecture-review/validate_h0.mjs"), manifest: exists(root, "docs/architecture-review/baseline/manifest.json") },
     policies: ["authorization-gate.md", "native-tooling-doctrine.md", "verification-contract.md"].filter((p) => exists(root, `policies/${p}`)),
     adapters: ["antigravity.md", "claude-code.md", "pi-agent.md"].filter((a) => exists(root, `adapters/${a}`)),
-    runtimes: { claudeCode: exists(root, ".claude/settings.json"), pi: !!env.PI_AGENT_HOME, antigravity: !!env.ANTIGRAVITY_HOME },
+    // Runtime = a binary or home the host actually has. Harness files (.claude/settings.json) prove nothing: see `extensions`.
+    runtimes: { claudeCode: !!env.CLAUDECODE || onPath(env, platform, "claude"), pi: !!(env.PI_AGENT_HOME || env.PI_CODING_AGENT_DIR) || onPath(env, platform, "pi"), antigravity: !!env.ANTIGRAVITY_HOME || onPath(env, platform, "agy", "antigravity") },
     extensions: { claudeHook: exists(root, ".claude/hooks") || exists(root, ".claude/settings.json") },
     browser: { playwright: !!(pkg && pkg.dependencies && pkg.dependencies["playwright-core"]), channel: env.SA_BROWSER_CHANNEL || null },
     // Caido INSTANCE config (baseUrl + token). projectId is NO LONGER a mandatory global — it is bound
@@ -51,7 +57,7 @@ export function collectEnv({ root = repoRoot(), env = process.env, platform = os
     caido: { baseUrl: !!env.CAIDO_BASE_URL, token: !!env.CAIDO_TOKEN, projectId: !!env.CAIDO_PROJECT_ID, projectIdCompat: !!env.CAIDO_PROJECT_ID },
     engagement,
     workspace: { tool: exists(root, "tools/workspace/engagement.mjs"), engagementRoot: env.SA_ENGAGEMENT_ROOT || null },
-    scope: { present: !!(engagement && engagement.dir) }, // scope.md lives under the active engagement
+    scope: { present: !!(engagement && engagement.dir && fs.existsSync(path.join(engagement.dir, "scope.md")) && validateScope(path.join(engagement.dir, "scope.md")).ok) },
     // Persistent AUDIT evidence lives in the ACTIVE engagement (<engagement>/evidence). Legacy SA_EVIDENCE_DIR
     // is honored ONLY when NO engagement is active (safe, delimited) and NEVER overrides the active engagement.
     evidence: resolveEvidenceConfig(env, engagement),
@@ -77,7 +83,7 @@ function resolveEvidenceConfig(env, engagement) {
 // only a single-engagement compat fallback. Deterministic; never picks an engagement implicitly.
 function resolveActiveEngagement(env) {
   const root = env.SA_ENGAGEMENT_ROOT || null;
-  const active = getActiveEngagement({ root, env, sessionId: env.SA_SESSION_ID || null });
+  const active = getActiveEngagement({ root, env, sessionId: resolveSessionId({ env }) });
   const base = { selected: !!active.name, source: active.source, root, name: active.name || null, dir: active.dir || null, managed: false, caidoProjectId: null, caidoProjectSource: null };
   if (!active.name || !active.dir) return base; // none, or an unresolved override/stale pointer
   try {
@@ -110,8 +116,8 @@ export const CHECKS = Object.freeze({
     : C("policies", "Policies", e.policies.length ? "degraded" : "error", `found ${e.policies.length}/3`),
   executionContext: (e) => e.files.bridge ? C("executionContext", "Capability Bridge / Execution Context", "ok", "bridge.mjs present (operator provisions ctx at runtime)")
     : C("executionContext", "Capability Bridge / Execution Context", "error", "bridge.mjs missing"),
-  scope: (e) => e.scope.present ? C("scope", "Engagement scope", "ok", "engagement root configured")
-    : C("scope", "Engagement scope", "missing", "no SA_ENGAGEMENT_ROOT (scope.md per engagement)"),
+  scope: (e) => e.scope.present ? C("scope", "Engagement scope", "ok", "active engagement has a structurally valid scope.md")
+    : C("scope", "Engagement scope", "missing", "no active engagement with a valid scope.md (scope.md per engagement)"),
   browser: (e) => e.browser.playwright ? C("browser", "Browser Runtime", "ok", `playwright-core present${e.browser.channel ? `; channel ${e.browser.channel}` : ""}`)
     : C("browser", "Browser Runtime", "degraded", "no playwright-core; HTTP fallback only (no false auth)"),
   // Caido INSTANCE config only (baseUrl + token). The project binding is a SEPARATE check.

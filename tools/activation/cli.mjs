@@ -22,8 +22,13 @@ function die(msg, code = 2) { console.error(`error: ${msg}`); process.exit(code)
 
 function main() {
   const a = parse(process.argv.slice(2));
+  if (process.argv.slice(2).some((x) => x === "--help" || x === "-h")) { console.log("Usage: cli.mjs activate|deactivate|status [--project <dir>] [--home <central>] [--runtime claude-code|pi|antigravity|all] [--mcp] [--force]"); return 0; }
   const projectDir = (a.project && a.project !== true) ? a.project : process.cwd();
-  const runtimes = a.runtime === "all" ? ["claude-code", "pi", "antigravity"] : (a.runtime && a.runtime !== true) ? [a.runtime] : ["claude-code"];
+  const RUNTIMES = ["claude-code", "pi", "antigravity"];
+  const raw = a.runtime ?? a.runtimes;
+  if (raw === true) die("--runtime needs a value (claude-code|pi|antigravity|all, comma-separated allowed)");
+  const runtimes = raw === undefined ? null : raw === "all" ? RUNTIMES : [...new Set(String(raw).split(",").map((s) => s.trim()))]; // null = keep what the marker has
+  for (const x of runtimes || []) if (!RUNTIMES.includes(x)) die(`unknown runtime '${x}' (valid: ${RUNTIMES.join("|")}|all)`);
 
   if (a.cmd === "activate") {
     const r = activate({ projectDir, home: (a.home && a.home !== true) ? a.home : hackbotHome(), force: !!a.force, operator: process.env.USER || null, runtimes, mcp: !!a.mcp });
@@ -33,10 +38,11 @@ function main() {
     if (r.backedUp.length) console.log(`  backed up (restored on deactivate): ${r.backedUp.join(", ")}`);
     console.log(`  mcp: ${r.mcp ? "project-scoped .mcp.json linked" : "not enabled"}  |  runtimes: ${r.runtimes.join(", ")}`);
     console.log(`\nActivation provides the harness here; it does NOT select an engagement or authorize any target.`);
-    console.log(`Next: node tools/workspace/cli.mjs use --name <engagement>  then  /verificar-ambiente  →  /iniciar-pentest`);
-    if (runtimes.some((x) => x === "pi" || x === "antigravity")) {
-      console.log(`\nNote: Pi registers skills GLOBALLY (~/.pi) — not done here (no global install). Pi/Antigravity can`);
-      console.log(`read this project's linked SKILL.md/skills; see handbook ch.18 §18.6 (per-runtime matrix).`);
+    console.log(`Next: node tools/workspace/cli.mjs use --name <engagement>  then  /verificar-ambiente  →  /iniciar-pentest (Pi: /skill:<name>)`);
+    if (r.runtimes.some((x) => x === "pi" || x === "antigravity")) {
+      if (r.runtimes.includes("pi")) console.log(`\nPi: project .pi/settings.json linked (no global install). Trust it per run with \`pi -a\` (or /trust); skills run as /skill:<name>.`);
+      if (r.runtimes.includes("antigravity")) console.log(`\nAntigravity: AGENTS.md and .agents/skills linked (no global install). Run \`agy\` from this project; list skills with /skills.`);
+      console.log(`See handbook ch.18 §18.6 (per-runtime matrix).`);
     }
     return 0;
   }
@@ -46,6 +52,7 @@ function main() {
     console.log(`deactivated: ${r.projectDir}`);
     console.log(`  removed links: ${r.removed.join(", ") || "(none)"}`);
     if (r.restored.length) console.log(`  restored pre-existing: ${r.restored.join(", ")}`);
+    if (r.keptBackups.length) console.log(`  kept (newer file at the original path, nothing overwritten): ${r.keptBackups.join(", ")}`);
     console.log(`  engagement/pentest data preserved: ${r.dataPreserved}`);
     return 0;
   }

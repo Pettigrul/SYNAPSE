@@ -16,6 +16,14 @@ modalidade: `blackbox`/`graybox`/`whitebox`). Execute:
 node tools/workspace/cli.mjs init --name <nome> [--modality blackbox|graybox|whitebox]
 ```
 
+Se o operador informar o escopo, escreva-o num arquivo temporário (exige `# Scope` e `## In Scope`) e instale:
+
+```bash
+node tools/workspace/cli.mjs scope --name <nome> --file <arquivo.md>
+```
+
+Selecionar e preparar o workspace: `use --name <nome>` e depois `bootstrap` (`--runtime both` gera `AGENTS.md`+`CLAUDE.md`).
+
 - Cria em `SA_ENGAGEMENT_ROOT/<nome>` (pode estar **fora** do repositório). Não copia skills/agents/tools/KB.
 - **Não ativa** o engagement — para operar, use depois `/usar-engagement`. Criar ≠ selecionar ≠ autorizar.
 - Associe o projeto Caido separadamente com `/associar-caido` (o projeto vem do manifesto, não de env global).

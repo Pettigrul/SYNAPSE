@@ -20,6 +20,7 @@ function parse(argv) {
 
 function main() {
   const a = parse(process.argv.slice(2));
+  if (process.argv.slice(2).some((x) => x === "--help" || x === "-h")) { console.log(`usage: node cli.mjs preflight|doctor [--profile <p>] [--json]`); return 0; }
   // Load local persistent config (<repo>/.env) BEFORE snapshotting the environment. Env vars already
   // set take precedence; only variable NAMES are ever shown — never values.
   const envLoad = process.env.SA_SKIP_ENV_FILE ? { loaded: false, applied: [], skipped: [], keys: [] } : loadProjectEnv();

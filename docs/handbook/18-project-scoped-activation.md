@@ -3,7 +3,7 @@
 > Permite abrir um projeto/engagement externo e usar o SYNAPSE ali, **referenciando uma única implementação
 > central** por **symlinks** — sem instalação global, sem duplicar os 127 corpos da KB, sem segundo
 > dispatcher e sem framework de plugins. Par do cap. 16 (multi-engagement) e cap. 17 (skills). ✅🧪
-> `test-activation.mjs` **18/18**; contrato de skills `test-skills.mjs` **54/54**.
+> `test-activation.mjs` **18/18**; `test-runtime-links.mjs` **44/44**; contrato de skills `test-skills.mjs` **62/62**.
 
 ## 18.1 Instalação central do harness
 
@@ -39,21 +39,25 @@ tools/  references/  workflows/  skills/(KB)  policies/  agents/  reports/  SKIL
 .claude/skills  .claude/hooks  .claude/settings.json
 ```
 
+Por runtime declarado, além desses: `pi` → `AGENTS.md` e `.pi/settings.json`; `antigravity` → `AGENTS.md` e
+`.agents/skills` (link para `.claude/skills`, sem cópia). Tudo dentro do projeto; nada global.
+
 - **Zero duplicação:** a KB e o dispatcher são **linkados**, nunca copiados.
 - **Conflitos:** se já houver conteúdo real do operador num alvo, a ativação **recusa**; com `--force` faz
   backup (`*.hackbot-bak`) **restaurado** no `deactivate`.
-- **Idempotente:** reativar reaponta links e atualiza o marcador, sem erro.
+- **Idempotente:** reativar reaponta links e atualiza o marcador, sem erro. Reativar com outro conjunto de runtimes
+  adiciona e remove os links de `.pi/` e `.agents/`; sem `--runtime`, mantém os runtimes do marcador.
 
 ## 18.4 Comandos de ativação / desativação
 
 ```bash
 # ativar (default --project = diretório atual; --home = raiz central detectada automaticamente)
-node tools/activation/cli.mjs activate   --project "/caminho/projeto" [--runtime claude-code|pi|antigravity|all] [--mcp] [--force]
+node tools/activation/cli.mjs activate   --project "/caminho/projeto" [--runtime claude-code|pi|antigravity|all|lista,separada] [--mcp] [--force]
 node tools/activation/cli.mjs status     --project "/caminho/projeto"
 node tools/activation/cli.mjs deactivate --project "/caminho/projeto"
 ```
 
-Skills finas equivalentes: **`/ativar-projeto`** e **`/desativar-projeto`** (cap. 17). **Ativar ≠ selecionar
+Valores desconhecidos em `--runtime` são rejeitados. Skills finas equivalentes: **`/ativar-projeto`** e **`/desativar-projeto`** (cap. 17). **Ativar ≠ selecionar
 engagement ≠ autorizar alvo** — ativação é pura manipulação de arquivos.
 
 ## 18.5 Fluxo operacional (Linux/Omarchy e Windows)
@@ -79,22 +83,22 @@ Níveis: **D**=documentado · **I**=implementado · **T**=testado deterministica
 
 | Runtime | Descoberta local de skills | Dispatcher/KB/tools via link | MCP por projeto | Nível |
 |---------|----------------------------|------------------------------|-----------------|-------|
-| **Claude Code** | `.claude/skills` symlinked (mecanismo sancionado pelo adapter) | sim (symlinks; CLIs rodam do projeto) | `--mcp` linka `.mcp.json` **se existir** no central (não há hoje) | **I + T** (camada de arquivos/CLI); reconhecimento pela app ao vivo = **NOT RUN** |
-| **Pi Agent** | registro **nativo é GLOBAL** (`~/.pi`) → **não feito** (proibido). Local: `pi --skill <projeto>/SKILL.md` por invocação, ou context-files (`AGENTS.md`/`CLAUDE.md` do Flow 8) | lê `SKILL.md`/`skills` linkados | n/a nesta rodada | **D** (contrato do adapter); **não** validado em runtime |
-| **Antigravity** | via `AGENTS.md` (contrato) — **runtime indisponível no host** | leria recursos linkados | n/a nesta rodada | **D**; runtime = **BLOCKED/NOT RUN** |
+| **Claude Code** | `.claude/skills` symlinked (mecanismo sancionado pelo adapter) | sim (symlinks; CLIs rodam do projeto) | `--mcp` linka `.mcp.json` **se existir** no central (não há hoje) | **I + T + R** (aceitação S4, [41](../architecture-review/41-s4-real-acceptance.md)); não reexecutado ao vivo na rodada mais recente |
+| **Pi Agent** | **por projeto:** `.pi/settings.json` linkado, carregado com `pi -a` (ou `/trust`); skills como `/skill:<nome>`. Sem instalação global | lê `AGENTS.md`, `SKILL.md` e `skills` linkados; extensão do Bridge via settings | n/a nesta rodada | **I + T + R em dados sintéticos** (Pi 1.4.0, `--mode json`); TUI, `/trust`, alvos reais = **NOT RUN** |
+| **Antigravity** | **por projeto:** `.agents/skills` linkado; 13/13 listadas por `agy -p /skills` | `AGENTS.md` carregado e arquivos lidos; dispatcher **não** seguido no cenário 2 (FAIL) | n/a nesta rodada | **I + T + R parcial** (agy 1.5.1); comando de shell sem interação = **BLOCKED**; interativo = **NOT RUN** |
 
-> **Honestidade:** apenas a camada de **arquivos/contrato** e os **CLIs** foram comprovados (T). O
-> reconhecimento das skills pela aplicação Claude Code ao vivo **não** foi executado (exige nova sessão/turno
-> de LLM). Pi/Antigravity têm apenas **contrato** verificado.
+> **Honestidade:** R no Pi vale para dados sintéticos: cenários 1-14 PASS em uma única passada, com S12
+> rejulgado do log. No Antigravity, cenários 3-11 estão BLOCKED sem interação, e o
+> carregamento do `AGENTS.md` não prova que o dispatcher é seguido. Guias: [Pi](operator/pi-agent.md),
+> [Antigravity](operator/antigravity.md).
 
 ## 18.7 Limitações & alternativas (sem contornar o "sem global")
 
-- **Pi**: a descoberta nativa de skills é **global** (`~/.pi/agent/skills/`). Como não instalamos global, a
-  alternativa local é `pi --skill <projeto>/SKILL.md` (por invocação) ou os **context-files** `AGENTS.md`/
-  `CLAUDE.md` (gerados pelo Flow 8, não à mão). **Bloqueio honesto:** registro persistente por projeto no Pi
-  exigiria mudança de arquitetura do Pi — **não** implementado.
-- **Antigravity**: runtime indisponível no host → carga end-to-end **PENDENTE**; só o contrato (`AGENTS.md`)
-  é conhecido.
+- **Pi**: `.pi/settings.json` é protegido por *trust*; modos não interativos o ignoram sem `-a`. O `HOME` real carrega
+  também as skills globais do usuário. O `bash` do Pi não tem sandbox.
+- **Antigravity**: comando de shell sem interação é negado pelo runtime (decisão do operador, ver
+  [guia](operator/antigravity.md)). Não há adapter de Bridge: `tools/web-runtime/adapters/cli.mjs` é o único caminho, sem
+  estado e com escopo fornecido por quem chama.
 - **Windows sem symlink**: sem *Developer Mode*/privilégio, `mklink` de diretório falha. Alternativa mínima:
   rodar da raiz central (Layout B) com `SA_ENGAGEMENT_ROOT`, ou habilitar o *Developer Mode*. **Não**
   contornamos criando cópias (duplicaria a KB) nem instalação global.
@@ -103,17 +107,18 @@ Níveis: **D**=documentado · **I**=implementado · **T**=testado deterministica
 ## 18.8 Semântica & precedência
 
 - **Harness instalado** (repo central) → **Projeto ativado** (marcador válido + links) → **Engagement
-  selecionado** (`use`; determina escopo/projeto Caido/persistência) → **Sessão operacional** (`SA_SESSION_ID`)
+  selecionado** (`use`; determina escopo/projeto Caido/persistência) → **Sessão operacional** (`SA_SESSION_ID`, ou derivada do marcador)
   → **Operação autorizada** (Execution Context + Approval Gate).
 - Um **projeto ativado não autoriza** testar nenhum alvo; a ativação **não** seleciona engagement
   silenciosamente.
-- **Precedência de config:** ambiente > `<central>/.env` (`SA_SKIP_ENV_FILE=1` ignora o `.env`). Engagement
+- **Precedência de config:** ambiente > `<central>/.env`, carregado por todo projeto ativado (`SA_SKIP_ENV_FILE=1` ignora o `.env`). Engagement
   ativo: `SA_ENGAGEMENT` (override) > ponteiro de sessão > nenhum. Projeto Caido: **manifesto** do engagement.
 
 ## 18.9 Isolamento (preservado) & limitação honesta
 
 Ativar o projeto A **não** ativa o B (marcador por projeto). **Nenhuma** config global é tocada. Projeto
-Caido vem do manifesto; evidências confinadas ao engagement; `SA_SESSION_ID` isola sessões concorrentes;
+Caido vem do manifesto; evidências confinadas ao engagement; `SA_SESSION_ID` isola sessões concorrentes e, sem ele, a
+sessão derivada do marcador dá a cada projeto ativado uma seleção própria, mesmo com o mesmo root;
 troca de engagement exige reconstrução de contexto e **não** declara histórico do LLM limpo sem
 reinicialização efetiva. **Carregamento de recursos ≠ permissão de filesystem:** os symlinks dão acesso de
 leitura/execução aos recursos do harness, mas **não** são um sandbox — ferramentas genéricas do runtime
@@ -129,4 +134,5 @@ engagement + **projeto Caido do manifesto** a partir do projeto; ativação **n�
 autoriza alvo; **idempotência**; deactivate remove links+marcador e **preserva dados do engagement**;
 **reativação**; **config pré-existente** (recusa sem `--force`, backup+restauração com `--force`); **paths com
 espaços**; **isolamento A≠B**; **sem modificação global** (`~/.pi`/`~/.gemini` não criados; `mcp=false` sem
-`.mcp.json`); projeto **não ativado** (status=false, deactivate erra limpo).
+`.mcp.json`); projeto **não ativado** (status=false, deactivate erra limpo). Conjuntos de links por runtime, `--runtime` com
+lista e rejeição de valores desconhecidos: `node tools/activation/test-runtime-links.mjs` → 44/44.

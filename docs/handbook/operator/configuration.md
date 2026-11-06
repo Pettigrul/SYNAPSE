@@ -1,32 +1,37 @@
 # Guia de configuração
 
-> `.env` (config persistente), precedência, diretórios e persistência por engagement. Fonte: `.env.example`,
+> `.env` (config persistente, carregado também por projetos ativados), precedência, diretórios e persistência por engagement. Fonte: `.env.example`,
 > `tools/preflight/env-loader.mjs`, `tools/workspace/engagement.mjs`. Técnico: [cap. 15](../15-windows-bootstrap-preflight.md), [cap. 16](../16-multi-engagement-and-caido-onboarding.md).
 
 ## `.env` — chaves reais
 
 Copie `.env.example` → `.env` (gitignored). O loader usa o parser **nativo** do Node 22 (sem dotenv) nos
-pontos de entrada Doctor/Preflight/CLI. **Valores nunca são impressos** (só nomes de variáveis).
+pontos de entrada Doctor/Preflight/CLI, a partir da raiz do harness: todo projeto ativado usa o mesmo `.env` central (um
+token por máquina). **Valores nunca são impressos** (só nomes de variáveis).
 
 | Chave | Escopo | Papel |
 |-------|--------|-------|
 | `CAIDO_BASE_URL` | instância | URL da instância Caido (GraphQL em `<baseUrl>/graphql`) |
 | `CAIDO_TOKEN` | instância | PAT (`caido_…`) ou access token; header `Authorization: Bearer <token>` |
-| `SA_ENGAGEMENT_ROOT` | instância | diretório-base de **todos** os engagements — **fora** do repo |
+| `SA_ENGAGEMENT_ROOT` | instância | diretório-base de **todos** os engagements — **fora** do repo; dentro do harness só `engagements/` é aceito (senão, `root-inside-harness`) |
 | `SA_ENGAGEMENT` | opcional | **override** explícito do engagente ativo (automação); normalmente **vazio** |
-| `SA_SESSION_ID` | opcional | isola o ponteiro de engagement ativo entre sessões concorrentes |
+| `SA_SESSION_ID` | opcional | isola o ponteiro de engagement ativo entre sessões concorrentes. Sem ele, projeto ativado usa sessão estável derivada do marcador; valor explícito vence |
 | `CAIDO_PROJECT_ID` | compat opcional | **só** single-engagement, só quando o engagement ativo **não** tem projeto; **nunca** sobrepõe o binding |
 | `SA_SKIP_ENV_FILE` | opcional | `1` = CLIs **não** carregam o `.env` (automação hermética); não usar em operação normal |
+| `SECAUDIT_BRIDGE_CONTEXTS` | opcional | caminho do JSON de Execution Context escrito pelo operador, para as ferramentas do Bridge no Pi; pode ficar fora do `.env` |
 | `SA_EVIDENCE_DIR` | **deprecado** | legado só sem engagement ativo; **nunca** sobrepõe `<engagement>/evidence` |
 
 ## Precedência de configuração
 
 1. **Variáveis já no ambiente vencem** o `.env` (o `.env` nunca as sobrepõe).
-2. **Engagement ativo:** `SA_ENGAGEMENT` (override) > ponteiro de sessão (`use`) > **nenhum** (nunca adivinha).
+2. **Engagement ativo:** `SA_ENGAGEMENT` (override) > ponteiro de sessão (`use`; a sessão vem de `SA_SESSION_ID` > marcador do
+   projeto ativado > ponteiro padrão) > **nenhum** (nunca adivinha).
 3. **Projeto Caido:** manifesto do engagement (`.engagement.json`) > `CAIDO_PROJECT_ID` (compat, só se o
    engagement não tem binding) > **nenhum** → ops dependentes de projeto **bloqueadas** (sem fallback silencioso).
 4. **Evidências:** `<engagement>/evidence` (resolvido do ativo) — **sem** dir global, **sem** `/tmp`.
 
+> Credenciais de **modelo** ficam com o runtime (Pi/`agy`), não aqui.
+>
 > A mera presença do `.env` **não autoriza** operação alguma — autorização fica no Execution Context + policies.
 
 ## Diretórios e persistência (por engagement)
@@ -42,7 +47,8 @@ Sob `SA_ENGAGEMENT_ROOT/<engagement>/` (criado por `cli.mjs init`; **sem** novas
 | `1-Reports/ … 9-Trashcan/` | buckets do workspace: `1-Reports 2-Findings 3-Recon 4-Analysis 5-Scripts 6-Lists 7-Random 8-Archive 9-Trashcan` |
 | `.whitebox-access.log` | log de autorização Whitebox (quando aplicável) |
 
-Ponteiro de seleção por sessão: `SA_ENGAGEMENT_ROOT/.sa-state/active[-<SA_SESSION_ID>].json` (sem segredos).
+Ponteiro de seleção por sessão: `SA_ENGAGEMENT_ROOT/.sa-state/active[-<sessão>].json` (sem segredos), onde `<sessão>` é o
+`SA_SESSION_ID` ou, em projeto ativado, `prj-<hash>`.
 
 ## Backup e recuperação
 

@@ -22,6 +22,10 @@ export const LINKS = [
   "tools", "references", "workflows", "skills", "policies", "agents", "reports", "SKILL.md",
   ".claude/skills", ".claude/hooks", ".claude/settings.json",
 ];
+// Extra discovery points per declared runtime, verified against real Pi 1.4 and agy 1.5 runs. Both load AGENTS.md
+// (a thin pointer to SKILL.md). Pi resolves .pi/settings.json from the PROJECT's .pi/, so it wires the project's own
+// links; agy reads .agents/skills (a tracked link to .claude/skills: same skills, no copy). Nothing global.
+export const RUNTIME_LINKS = { pi: ["AGENTS.md", ".pi/settings.json"], antigravity: ["AGENTS.md", ".agents/skills"] };
 
 // The central harness = where this code lives (tools/activation → repo root). No global lookup.
 export function hackbotHome() { return path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".."); }
@@ -53,7 +57,7 @@ export function statusActivation({ projectDir }) {
   return { activated: true, projectDir: p, hackbotHome: m.hackbotHome, runtimes: m.runtimes || [], mcp: !!m.mcp, created: m.created || null, links, healthy: links.every((l) => l.healthy) };
 }
 
-export function activate({ projectDir, home = hackbotHome(), force = false, operator = null, runtimes = ["claude-code"], mcp = false } = {}) {
+export function activate({ projectDir, home = hackbotHome(), force = false, operator = null, runtimes: runtimesArg = null, mcp = false } = {}) {
   const H = path.resolve(home);
   if (!fs.existsSync(path.join(H, "SKILL.md")) || !fs.existsSync(path.join(H, "tools", "workspace", "cli.mjs"))) {
     throw new ActivationError("bad-home", `central harness not found at ${H} (missing SKILL.md/tools) — pass a valid --home`);
@@ -62,11 +66,12 @@ export function activate({ projectDir, home = hackbotHome(), force = false, oper
   if (!fs.existsSync(p) || !fs.statSync(p).isDirectory()) throw new ActivationError("no-project", `project directory does not exist: ${p}`);
 
   const existing = fs.existsSync(path.join(p, MARKER)) ? JSON.parse(fs.readFileSync(path.join(p, MARKER), "utf8")) : null;
+  const runtimes = runtimesArg || (existing && existing.runtimes) || ["claude-code"];
   const backups = existing && existing.backups ? { ...existing.backups } : {};
   const createdDirs = existing && existing.createdDirs ? [...existing.createdDirs] : [];
 
   // Decide the link set (only resources that actually exist centrally).
-  const wanted = LINKS.filter((rel) => fs.existsSync(path.join(H, rel)));
+  const wanted = [...new Set([...LINKS, ...runtimes.flatMap((r) => RUNTIME_LINKS[r] || [])])].filter((rel) => fs.existsSync(path.join(H, rel)));
   if (mcp && fs.existsSync(path.join(H, ".mcp.json"))) wanted.push(".mcp.json");
 
   // First pass: detect conflicts (pre-existing NON-ours content at a target).
@@ -75,10 +80,25 @@ export function activate({ projectDir, home = hackbotHome(), force = false, oper
     const dest = path.join(p, rel), src = path.join(H, rel);
     if (!fs.existsSync(dest) && !isSymlinkDangling(dest)) continue;        // free slot
     if (isOurLink(dest, src)) continue;                                     // already ours (idempotent)
-    if (backups[rel]) continue;                                             // already backed up earlier
+    // A backup already holds the operator's earlier file, so this is newer content: never overwrite or delete it.
+    if (backups[rel] && fs.existsSync(dest)) throw new ActivationError("conflict", `${rel} has new content and a backup already exists at ${backups[rel]} — move one of them first`);
+    // A .hackbot-bak not in the marker (kept by a deactivate) is the operator's only copy: --force must not overwrite it.
+    if (!backups[rel] && fs.existsSync(dest + ".hackbot-bak")) throw new ActivationError("conflict", `${rel}.hackbot-bak already exists — move it first`);
     conflicts.push(rel);
   }
   if (conflicts.length && !force) throw new ActivationError("conflict", `pre-existing content would be overwritten: ${conflicts.join(", ")} — re-run with --force to back them up (restored on deactivate)`);
+
+  // Re-activation with another runtime set: drop our links no longer wanted, or deactivate would lose track of them.
+  // After the conflict check, so a refused activation changes nothing.
+  for (const rel of (existing && existing.links) || []) {
+    if (wanted.includes(rel) || !isOurLink(path.join(p, rel), path.join(H, rel))) continue;
+    fs.unlinkSync(path.join(p, rel));
+    if (backups[rel] && fs.existsSync(path.join(p, backups[rel]))) { fs.renameSync(path.join(p, backups[rel]), path.join(p, rel)); delete backups[rel]; } // the operator's file returns with the link gone
+  }
+  for (const relDir of [...createdDirs].sort((a, b) => b.length - a.length)) {
+    const d = path.join(p, relDir);
+    try { if (fs.existsSync(d) && fs.readdirSync(d).length === 0) fs.rmdirSync(d); } catch { /* keep non-empty */ }
+  }
 
   // Ensure parent dirs for .claude/* links; track dirs we create so deactivate can clean empties.
   for (const rel of wanted) {
@@ -115,7 +135,7 @@ export function deactivate({ projectDir } = {}) {
   const markerPath = path.join(p, MARKER);
   if (!fs.existsSync(markerPath)) throw new ActivationError("not-activated", `no activation marker in ${p} (nothing to deactivate)`);
   const m = JSON.parse(fs.readFileSync(markerPath, "utf8"));
-  const removed = [], restored = [];
+  const removed = [], restored = [], keptBackups = [];
   // Remove ONLY symlinks we created that still point into the recorded home (never operator's real files).
   for (const rel of (m.links || [])) {
     const dest = path.join(p, rel), src = path.join(m.hackbotHome, rel);
@@ -124,7 +144,10 @@ export function deactivate({ projectDir } = {}) {
   // Restore backups.
   for (const [rel, bakRel] of Object.entries(m.backups || {})) {
     const dest = path.join(p, rel), bak = path.join(p, bakRel);
-    if (fs.existsSync(bak) || isSymlinkDangling(bak)) { if (fs.existsSync(dest) || isSymlinkDangling(dest)) fs.rmSync(dest, { recursive: true, force: true }); fs.renameSync(bak, dest); restored.push(rel); }
+    if (!fs.existsSync(bak) && !isSymlinkDangling(bak)) continue;
+    if (fs.existsSync(dest)) { keptBackups.push(bakRel); continue; }                 // our link is gone, so this is the operator's newer file: keep both
+    if (isSymlinkDangling(dest)) fs.unlinkSync(dest);
+    fs.renameSync(bak, dest); restored.push(rel);
   }
   // Remove dirs we created, only if now empty (e.g. .claude/ we made).
   for (const relDir of [...(m.createdDirs || [])].sort((a, b) => b.length - a.length)) {
@@ -133,7 +156,7 @@ export function deactivate({ projectDir } = {}) {
   }
   fs.unlinkSync(markerPath);
   // Engagement/pentest data lives under SA_ENGAGEMENT_ROOT (or <project> buckets), NEVER in these links — untouched.
-  return { projectDir: p, removed, restored, dataPreserved: true };
+  return { projectDir: p, removed, restored, keptBackups, dataPreserved: true };
 }
 
 function isSymlinkDangling(p) { try { fs.lstatSync(p); return true; } catch { return false; } }

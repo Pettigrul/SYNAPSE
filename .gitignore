@@ -47,7 +47,8 @@ node_modules/
 
 # Local credentials / state (defensive — keep out of Git even if empty)
 .aws/
-.agents/
+.agents/*
+!.agents/skills
 
 # Session / engagement runtime state (beyond engagements/)
 **/.sa-state/
@@ -98,7 +99,8 @@ id_ed25519*
 *.ovpn
 
 # Local runtime state and captured cookies
-.pi/
+.pi/*
+!.pi/settings.json
 .gemini/
 cookies.txt
 

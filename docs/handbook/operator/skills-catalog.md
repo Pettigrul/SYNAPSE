@@ -5,6 +5,10 @@
 > dependências, limitações, risco de efeito colateral. Técnico: [cap. 17](../17-operational-skills-and-engagement-ux.md).
 > **Não** inclui skills futuras (`/gerar-relatorio`, `/registrar-achado` etc. **não existem**).
 
+**Invocação por runtime:** os nomes abaixo estão na forma do Claude Code e do Antigravity (`/modo`). No Pi, use
+`/skill:<nome>` (`/skill:modo`). No Antigravity, as skills que chamam uma CLI têm o comando negado sem interação
+([guia](antigravity.md)).
+
 ## Gestão do engagement
 
 ### `/listar-engagements`
@@ -21,10 +25,10 @@
 - **Executa:** cria diretórios + `.engagement.json`. **Risco:** cria arquivos no root (idempotente; não sobrescreve dados).
 
 ### `/usar-engagement`
-- **Finalidade:** selecionar o engagement **ativo** da sessão (ponteiro por `SA_SESSION_ID`).
+- **Finalidade:** selecionar o engagement **ativo** da sessão (ponteiro por `SA_SESSION_ID` ou, em projeto ativado sem ele, por projeto).
 - **Pré-requisitos:** engagement existente (match exato).
 - **Exemplo:** `/usar-engagement acme` → `cli.mjs use --name acme`.
-- **Executa:** grava o ponteiro de sessão. **Limitação:** troca **avisa** sessão limpa (não apaga histórico do LLM). **Risco:** baixo.
+- **Executa:** grava o ponteiro de sessão; numa troca, limpa o modo (volta a Copilot). **Limitação:** troca **avisa** sessão limpa (não apaga histórico do LLM). **Risco:** baixo.
 
 ### `/engagement-atual`
 - **Finalidade:** mostrar o ativo (ou "nenhum"). **Exemplo:** `/engagement-atual` → `cli.mjs active`.
@@ -77,7 +81,7 @@
 ### `/ativar-projeto`
 - **Finalidade:** linkar o harness central num projeto externo (symlinks; sem global, sem duplicar KB).
 - **Pré-requisitos:** diretório externo ao harness; symlink suportado (ver Windows em [runtimes.md](runtimes.md)).
-- **Exemplo:** `/ativar-projeto` → `activation/cli.mjs activate --project <dir> [--runtime …] [--mcp] [--force]`.
+- **Exemplo:** `/ativar-projeto` → `activation/cli.mjs activate --project <dir> [--runtime claude-code|pi|antigravity|all|lista,separada] [--mcp] [--force]`.
 - **Executa:** cria symlinks + marcador `.hackbot-activation.json`. **Risco:** cria links no projeto; conflitos
   recusados (backup com `--force`, restaurado no deactivate). **Ativar ≠ selecionar ≠ autorizar.**
 

@@ -26,6 +26,7 @@ function out(obj, code = 0) { process.stdout.write(JSON.stringify(obj) + "\n"); 
 
 async function main() {
   let raw = process.argv[2];
+  if (raw === "--help" || raw === "-h") { console.log("usage: node adapters/cli.mjs '<json-request>' (or the request on stdin); capabilities.* and http.* only"); return 0; }
   if (!raw) raw = await readStdin();
   if (!raw) return out({ ok: false, error: { code: "no-request", message: "provide a JSON request via argv or stdin" } }, 2);
 
@@ -51,7 +52,7 @@ async function main() {
     const investigationId = `cli-${Date.now()}`;
     bridge.openInvestigation({ investigationId, scope: req.scope, allowedCapabilities: ["http"] });
     const env = await bridge.invoke({ investigationId, op, params: req.params || {} });
-    return out(env);
+    return out(env, env.ok ? 0 : 1);
   } catch (e) {
     return out({ ok: false, op, error: { code: e.code || "error", message: String(e && e.message || e) } }, 1);
   } finally {
