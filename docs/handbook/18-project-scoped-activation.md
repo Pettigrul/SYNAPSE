@@ -104,9 +104,16 @@ Níveis: **D**=documentado · **I**=implementado · **T**=testado deterministica
   [guia](operator/antigravity.md)). Não há adapter de Bridge com estado, e `/investigar` não é protegido por ela:
   `tools/web-runtime/adapters/cli.mjs` é o único caminho, sem estado, e declara `operatorVerified: false`: quem o chama é o
   próprio agente.
-- **Windows sem symlink**: sem *Developer Mode*/privilégio, `mklink` de diretório falha. Alternativa mínima:
-  rodar da raiz central (Layout B) com `SA_ENGAGEMENT_ROOT`, ou habilitar o *Developer Mode*. **Não**
-  contornamos criando cópias (duplicaria a KB) nem instalação global.
+- **Windows sem symlink**: com `core.symlinks=false` (padrão corporativo, sem *Developer Mode*/privilégio), o Git
+  materializa os symlinks versionados de `.agents/skills/` como arquivos-texto de 1 linha (o alvo do link), e o
+  loader do Pi/Antigravity falha com `description is required`. Correção: rodar o materializador idempotente
+  **`node tools/activation/materialize-agents-skills.mjs`** (`--check` só reporta). Ele resolve cada entrada a
+  partir do próprio conteúdo do link: **junction** para o diretório-alvo (`.claude/skills/<nome>`, sem copiar a
+  KB) e **cópia** apenas do pequeno `SKILL.md` do dispatcher; só recorre a cópia de diretório se até a junction
+  for negada. O Preflight/Doctor sinaliza entradas não resolvidas (`agentsSkills`) e aponta o comando. Continua
+  **sem instalação global** e **sem duplicar os 127 corpos da KB** (o materializador toca apenas os 14 ponteiros
+  de `.agents/skills/`). Alternativas: rodar da raiz central (Layout B) com `SA_ENGAGEMENT_ROOT`, ou habilitar o
+  *Developer Mode*.
 - **MCP**: só é linkado quando `--mcp` **e** existe um `.mcp.json` central (não há hoje) — sem fabricação.
 
 ## 18.8 Semântica & precedência

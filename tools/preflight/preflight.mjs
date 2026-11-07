@@ -29,6 +29,71 @@ function onPath(env, platform, ...names) {
     .some((d) => names.some((n) => exts.some((x) => { try { return fs.statSync(path.join(d, n + x)).isFile(); } catch { return false; } })));
 }
 function countDirs(root, rel) { try { return fs.readdirSync(path.join(root, rel), { withFileTypes: true }).filter((d) => d.isDirectory()).length; } catch { return 0; } }
+function readJson(file) { try { return JSON.parse(fs.readFileSync(file, "utf8")); } catch { return null; } }
+
+// The Pi agent home (holds mcp-adapter.json and npm/node_modules/<extension>). Env override first, else the
+// conventional ~/.pi/agent. Returns null if no home is resolvable. Used to DETECT presence only.
+function piAgentHome(env) {
+  const h = env.PI_AGENT_HOME || env.PI_CODING_AGENT_DIR;
+  if (h) return h;
+  const home = env.HOME || env.USERPROFILE;
+  return home ? path.join(home, ".pi", "agent") : null;
+}
+
+// Read the configured MCP server NAMES from the Pi mcp-adapter.json. NAMES ONLY — never reads the servers'
+// .env, args, tokens or any value. Tolerant to the file being absent/invalid and to a few container shapes.
+function readMcpServers(env) {
+  const base = piAgentHome(env);
+  if (!base) return [];
+  const cfg = readJson(path.join(base, "mcp-adapter.json"));
+  if (!cfg || typeof cfg !== "object" || Array.isArray(cfg)) return [];
+  // Prefer an explicit server container. Only fall back to the bare config object when it actually LOOKS like a
+  // server map (every value is a server-definition object) — otherwise a flat config's scalar keys would be
+  // mis-reported as server names. Never a false positive from an arbitrarily-shaped file.
+  const looksLikeServerMap = (o) => { const v = Object.values(o); return v.length > 0 && v.every((x) => x && typeof x === "object" && !Array.isArray(x)); };
+  const container = cfg.mcpServers || cfg.servers || (looksLikeServerMap(cfg) ? cfg : null);
+  if (!container || typeof container !== "object") return [];
+  return Object.keys(container);
+}
+
+// Does the Pi install carry the pi-subagents extension? Deterministic path probe (no execution). Extensions
+// live under <piAgentHome>/npm/node_modules/<name> (same layout as pi-browser-use in the operator's install).
+function piHasSubagents(env) {
+  const base = piAgentHome(env);
+  if (!base) return false;
+  try { return fs.existsSync(path.join(base, "npm", "node_modules", "pi-subagents")); } catch { return false; }
+}
+
+// Probe the repo's own .agents/skills (the Antigravity load path). Each entry must expose a readable SKILL.md
+// that begins with YAML frontmatter ("---"). On POSIX the tracked symlinks resolve; on a Windows checkout with
+// core.symlinks=false they land as 1-line text files and FAIL to resolve — reported as broken (never read as a
+// skill). Platform-agnostic by construction: we test resolvability, not the link kind.
+function probeAgentsSkills(root) {
+  const base = path.join(root, ".agents", "skills");
+  let entries;
+  try { entries = fs.readdirSync(base, { withFileTypes: true }); } catch { return { present: false, total: 0, broken: [] }; }
+  const broken = []; let total = 0;
+  for (const d of entries) {
+    const name = d.name;
+    if (name.startsWith(".")) continue; // ignore dotfiles (.DS_Store, .gitkeep) — they are not skill entries
+    const p = path.join(base, name);
+    let st; try { st = fs.lstatSync(p); } catch { continue; }
+    if (st.isFile()) {
+      // A skill checked out as a 1-line relative-path text file (Windows core.symlinks=false) is a BROKEN skill;
+      // any other stray file is simply not a skill entry → ignore (don't inflate `broken` on a healthy checkout).
+      let looksLikeLink = false;
+      try { const c = fs.readFileSync(p, "utf8").trim(); looksLikeLink = st.size <= 400 && !/[\r\n]/.test(c) && /[\\/]/.test(c); } catch { /* unreadable → not counted */ }
+      if (looksLikeLink) { total++; broken.push(name); }
+      continue;
+    }
+    // symlink or directory → must expose a resolvable SKILL.md beginning with YAML frontmatter
+    total++;
+    let ok = false;
+    try { ok = fs.readFileSync(path.join(p, "SKILL.md"), "utf8").slice(0, 3) === "---"; } catch { ok = false; }
+    if (!ok) broken.push(name);
+  }
+  return { present: true, total, broken };
+}
 
 // ---- environment snapshot (the only impure part) ---------------------------
 export function collectEnv({ root = repoRoot(), env = process.env, platform = os.platform(), node = process.version } = {}) {
@@ -61,7 +126,32 @@ export function collectEnv({ root = repoRoot(), env = process.env, platform = os
     // Persistent AUDIT evidence lives in the ACTIVE engagement (<engagement>/evidence). Legacy SA_EVIDENCE_DIR
     // is honored ONLY when NO engagement is active (safe, delimited) and NEVER overrides the active engagement.
     evidence: resolveEvidenceConfig(env, engagement),
-    mcp: { github: !!env.GITHUB_MCP, confluence: !!env.CONFLUENCE_MCP },
+    // MCP servers are detected from the Pi mcp-adapter.json (names only), with the legacy env flags kept as an
+    // override. A server name containing "atlassian"/"jira" provides both Jira and Confluence (the mcp-atlassian
+    // server). NEVER reads any server secret/.env — only the configured names.
+    mcp: (() => {
+      const servers = readMcpServers(env);
+      const has = (s) => servers.some((n) => n.toLowerCase().includes(s));
+      const atlassian = has("atlassian") || has("jira") || has("confluence");
+      return {
+        github: !!env.GITHUB_MCP || has("github"),
+        confluence: !!env.CONFLUENCE_MCP || atlassian,
+        atlassian,
+        stride: !!env.SA_STRIDE_ENABLED || has("stride"),
+        servers, // NAMES only — surfaced by doctor; never any value
+      };
+    })(),
+    // Subagent orchestration is a RUNTIME capability (contract: references/subagent-orchestration.md), not a
+    // harness-bundled feature. Detected per runtime, never vendored: Claude Code has it natively (Task/Agent);
+    // Pi via the pi-subagents extension; Antigravity via its own mechanism (not verifiable offline → null).
+    orchestration: {
+      claudeCode: !!env.CLAUDECODE || onPath(env, platform, "claude"),
+      pi: piHasSubagents(env),
+      antigravity: null,
+    },
+    // The repo's own .agents/skills load path (Antigravity): resolvable here, or broken by a Windows no-symlink
+    // checkout (fix: tools/activation/materialize-agents-skills.mjs). Optional check — never blocks.
+    agentsSkills: probeAgentsSkills(root),
     optional: { stride: !!env.SA_STRIDE_ENABLED, nativeWorkflows: false }, // nativeWorkflows: V2/PLANNED (F5b) — always optional
   };
 }
@@ -165,7 +255,28 @@ export const CHECKS = Object.freeze({
   // --- optional dependencies (never BLOCK) ---
   mcpGithub: (e) => e.mcp.github ? C("mcpGithub", "GitHub MCP (optional)", "ok", "configured") : C("mcpGithub", "GitHub MCP (optional)", "missing", "not configured (Black Box unaffected)"),
   mcpConfluence: (e) => e.mcp.confluence ? C("mcpConfluence", "Confluence MCP (optional)", "ok", "configured") : C("mcpConfluence", "Confluence MCP (optional)", "missing", "not configured"),
-  stride: (e) => e.optional.stride ? C("stride", "STRIDE threat modeling (optional)", "ok", "enabled") : C("stride", "STRIDE threat modeling (optional)", "missing", "not enabled (H2c-F2+)"),
+  mcpAtlassian: (e) => e.mcp.atlassian ? C("mcpAtlassian", "Atlassian MCP (optional)", "ok", "configured (Jira + Confluence context)") : C("mcpAtlassian", "Atlassian MCP (optional)", "missing", "not configured"),
+  stride: (e) => e.mcp.stride ? C("stride", "STRIDE threat modeling (optional)", "ok", "enabled") : C("stride", "STRIDE threat modeling (optional)", "missing", "not enabled (H2c-F2+)"),
+  // Subagent orchestration — a runtime capability declared by the harness, never bundled. OK when a present
+  // runtime provides it; degraded (not blocking) when a runtime is present without it; flows then run single-agent.
+  orchestration: (e) => {
+    const o = e.orchestration || {};
+    const present = [];
+    if (e.runtimes.claudeCode && o.claudeCode) present.push("claude-code (native Task/Agent)");
+    if (e.runtimes.pi && o.pi) present.push("pi (pi-subagents)");
+    if (present.length) return C("orchestration", "Subagent orchestration (optional)", "ok", present.join(", "));
+    if (e.runtimes.pi && !o.pi) return C("orchestration", "Subagent orchestration (optional)", "degraded", "Pi present; pi-subagents extension not detected — flows degrade to single-agent (contract: references/subagent-orchestration.md)");
+    if (e.runtimes.antigravity) return C("orchestration", "Subagent orchestration (optional)", "degraded", "Antigravity uses its own delegation mechanism (not verified offline)");
+    return C("orchestration", "Subagent orchestration (optional)", "missing", "no runtime orchestration detected (contract: references/subagent-orchestration.md)");
+  },
+  // The repo's .agents/skills (Antigravity load path). OK when every entry resolves to a SKILL.md; degraded when a
+  // Windows no-symlink checkout left entries unresolved — actionable, never blocking.
+  agentsSkills: (e) => {
+    const a = e.agentsSkills || {};
+    if (!a.present) return C("agentsSkills", "Antigravity skills (.agents/skills)", "missing", ".agents/skills not found");
+    if (a.broken && a.broken.length) return C("agentsSkills", "Antigravity skills (.agents/skills)", "degraded", `${a.broken.length}/${a.total} unresolved (Windows core.symlinks=false?) — run: node tools/activation/materialize-agents-skills.mjs`);
+    return C("agentsSkills", "Antigravity skills (.agents/skills)", "ok", `${a.total} skills resolve`);
+  },
   nativeWorkflows: () => C("nativeWorkflows", "Native Caido workflow generation (optional)", "planned", "post-MVP/V2 (H2b-F5b); offline F5a generation/validation available; does NOT block caido-native"),
 });
 
@@ -175,15 +286,15 @@ export const PROFILES = Object.freeze({
     // evidence is OPTIONAL here: core-lab may run read-only/discovery without an engagement; persistence is
     // refused at write time if none is selected (→ DEGRADED, actionable, never a silent /tmp dump).
     required: ["runtimes", "kb", "policies", "executionContext"],
-    optional: ["extensions", "browser", "workspace", "evidence"],
+    optional: ["extensions", "browser", "workspace", "evidence", "orchestration", "agentsSkills"],
   },
   "caido-native": {
     required: ["runtimes", "kb", "policies", "executionContext", "evidence", "caido", "workspace", "caidoProject"],
-    optional: ["extensions", "browser", "mcpGithub", "mcpConfluence", "stride", "nativeWorkflows"],
+    optional: ["extensions", "browser", "orchestration", "agentsSkills", "mcpGithub", "mcpConfluence", "mcpAtlassian", "stride", "nativeWorkflows"],
   },
   "full-engagement": {
     required: ["runtimes", "kb", "policies", "executionContext", "evidence", "caido", "workspace", "caidoProject", "scope"],
-    optional: ["extensions", "browser", "mcpGithub", "mcpConfluence", "stride", "nativeWorkflows"],
+    optional: ["extensions", "browser", "orchestration", "agentsSkills", "mcpGithub", "mcpConfluence", "mcpAtlassian", "stride", "nativeWorkflows"],
   },
 });
 

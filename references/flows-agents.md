@@ -74,6 +74,8 @@ End your report with:
   NEVER as a confirmed violation, and NEVER convert absence of evidence into a clean/conformant verdict.
 ```
 
+Subagent orchestration (the parallel-dispatch mechanism) is a **runtime capability**, not bundled by the harness — see [`subagent-orchestration.md`](subagent-orchestration.md) for the per-runtime mechanism and the detection the Preflight does. This brief contract is identical whether dispatch is parallel or sequential.
+
 If the runtime has no parallel dispatch: write the brief to `4-Analysis/briefs/[date]-[name].md`, run the phase yourself working only from it, produce the return blocks at the end. Same methodology, sequential.
 
 ---

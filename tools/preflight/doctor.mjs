@@ -45,7 +45,17 @@ export function runDoctor(env) {
     evidenceDir: env.evidence.dir
       ? `${env.evidence.dir} [${env.evidence.source}] (${env.evidence.writable ? "writable" : "NOT writable"})`
       : "(none — select an engagement; persistent evidence lives in <engagement>/evidence)",
-    optionalMcp: Object.entries(env.mcp).filter(([, v]) => v).map(([k]) => k),
+    optionalMcp: ["github", "confluence", "atlassian", "stride"].filter((k) => env.mcp[k]),
+    mcpServers: (env.mcp.servers || []), // NAMES only (from mcp-adapter.json); never any value. (Operators: a server NAME is surfaced here/in logs — do not embed a secret in a server's name.)
+    orchestration: (() => {
+      const o = env.orchestration || {};
+      const parts = [];
+      if (env.runtimes.claudeCode) parts.push(`claude-code:${o.claudeCode ? "native" : "none"}`);
+      if (env.runtimes.pi) parts.push(`pi:${o.pi ? "pi-subagents" : "absent"}`);
+      if (env.runtimes.antigravity) parts.push("antigravity:own-mechanism");
+      return parts.length ? parts.join(", ") : "(no runtime)";
+    })(),
+    agentsSkills: (() => { const a = env.agentsSkills || {}; return !a.present ? "(none)" : a.broken && a.broken.length ? `${a.broken.length}/${a.total} UNRESOLVED (run materialize-agents-skills.mjs): ${a.broken.join(", ")}` : `${a.total} resolve`; })(),
     nativeWorkflows: "post-MVP/V2 (optional); offline F5a available",
   };
   return { schema: 1, kind: "doctor", facts, hints: hints(env), llmUsed: false, offensiveOps: false };
@@ -64,6 +74,8 @@ function hints(env) {
   if (env.evidence.source === "engagement" && !env.evidence.writable) h.push(`Engagement dir not writable — cannot create ${env.evidence.dir}; fix permissions on the engagement directory.`);
   if (!env.evidence.dir) h.push("No evidence destination — persistent evidence (screenshots, captures) requires an active engagement; select one: node tools/workspace/cli.mjs use --name <name>.");
   if (env.evidence.source === "legacy-env") h.push("Using legacy SA_EVIDENCE_DIR (no active engagement) — prefer per-engagement evidence by selecting an engagement; SA_EVIDENCE_DIR never overrides an active engagement.");
+  if (env.agentsSkills && env.agentsSkills.present && env.agentsSkills.broken && env.agentsSkills.broken.length) h.push(".agents/skills has unresolved entries (typical on a Windows checkout with core.symlinks=false — Git materializes the tracked symlinks as 1-line text files). Materialize them: node tools/activation/materialize-agents-skills.mjs (idempotent; --check to just report).");
+  if (env.runtimes.pi && env.orchestration && !env.orchestration.pi) h.push("Pi present but the pi-subagents extension was not detected — subagent orchestration degrades to single-agent. Install/enable pi-subagents to let flows delegate (contract: references/subagent-orchestration.md).");
   if (env.runtimes.pi) h.push("Pi: skills run as /skill:<name> (e.g. /skill:modo). Project .pi/settings.json is trust-gated: `pi -a` or /trust load ALL project-local resources, including executable extensions, so review them first (see runtimeConfigReview) or use the explicit `-na` launch in the Pi guide.");
   if (env.runtimes.antigravity) h.push("Antigravity: run `agy` from an activated project; AGENTS.md and .agents/skills load from there, /skills lists them, and /security-auditor loads the dispatcher.");
   if (env.runtimes.claudeCode) h.push("Slash commands use each skill's EXACT name (e.g. /modo, /iniciar-pentest). Claude Code discovers .claude/skills/ at SESSION START — if a skill is missing, start a fresh session to refresh discovery (the 'claudeSkills' fact lists what is installed).");

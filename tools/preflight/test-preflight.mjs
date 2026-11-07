@@ -3,6 +3,9 @@
 // blocks" rule (incl. native workflows = PLANNED/V2), and the no-LLM/no-offensive invariants.
 
 import assert from "node:assert";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { runPreflight, collectEnv, PROFILES, CHECKS, STATUSES } from "./preflight.mjs";
 import { runDoctor } from "./doctor.mjs";
 
@@ -27,7 +30,9 @@ function fullEnv(over = {}) {
     workspace: { tool: true, engagementRoot: "C:/eng" },
     scope: { present: true },
     evidence: { dir: "C:/eng/acme/evidence", source: "engagement", writable: true },
-    mcp: { github: true, confluence: true },
+    mcp: { github: true, confluence: true, atlassian: true, stride: true, servers: ["github", "mcp-atlassian", "mcp-stride"] },
+    orchestration: { claudeCode: true, pi: false, antigravity: null },
+    agentsSkills: { present: true, total: 14, broken: [] },
     optional: { stride: true, nativeWorkflows: false },
     ...over,
   };
@@ -232,6 +237,87 @@ t("27 no engagement → evidence missing, core-lab DEGRADED", () => {
 t("28 legacy evidence compat → degraded", () => {
   const e = fullEnv({ engagement: { selected: false, name: null, dir: null, managed: false, caidoProjectId: null, caidoProjectSource: null }, evidence: { dir: "/legacy/ev", source: "legacy-env", writable: true } });
   assert.equal(CHECKS.evidence(e).status, "degraded");
+});
+
+// --- MCP detection from mcp-adapter.json (Frente 2), orchestration (Frente 1), .agents/skills (Frente 0) ---
+
+// 29 — collectEnv detects MCP servers by NAME from the Pi mcp-adapter.json (never reads a value)
+t("29 MCP detected from mcp-adapter.json (names only)", () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "sa-pf-"));
+  try {
+    const agent = path.join(home, ".pi", "agent"); fs.mkdirSync(agent, { recursive: true });
+    // server VALUES embed secrets (token/args/command) — none may ever enter the snapshot
+    fs.writeFileSync(path.join(agent, "mcp-adapter.json"), JSON.stringify({ mcpServers: {
+      github: { command: "gh", env: { GITHUB_TOKEN: "s3cr3t-ghp" } },
+      "mcp-atlassian": { command: "py", args: ["--token", "s3cr3t-atl"] },
+      "mcp-stride": {},
+    } }));
+    const e = collectEnv({ env: { HOME: home, USERPROFILE: home }, platform: "linux" });
+    assert.equal(e.mcp.github, true);
+    assert.equal(e.mcp.atlassian, true);
+    assert.equal(e.mcp.confluence, true);   // the atlassian server provides Confluence too
+    assert.equal(e.mcp.stride, true);
+    assert.ok(e.mcp.servers.includes("mcp-atlassian") && e.mcp.servers.includes("github")); // NAMES captured
+    assert.ok(!JSON.stringify(e.mcp).includes("s3cr3t")); // NAMES only — no server value (token/args/command) leaks
+  } finally { fs.rmSync(home, { recursive: true, force: true }); }
+});
+
+// 30 — no mcp-adapter.json and no env flags → all MCP flags false (not a crash)
+t("30 no mcp-adapter.json → MCP flags false", () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "sa-pf-"));
+  try {
+    const e = collectEnv({ env: { HOME: home, USERPROFILE: home }, platform: "linux" });
+    assert.equal(e.mcp.github, false); assert.equal(e.mcp.atlassian, false); assert.equal(e.mcp.stride, false);
+    assert.deepEqual(e.mcp.servers, []);
+  } finally { fs.rmSync(home, { recursive: true, force: true }); }
+});
+
+// 31 — orchestration: claude native ok / pi without subagents degraded / pi with subagents ok / none missing
+t("31 orchestration per runtime", () => {
+  assert.equal(CHECKS.orchestration(fullEnv()).status, "ok"); // claudeCode native
+  const piNo = fullEnv({ runtimes: { claudeCode: false, pi: true, antigravity: false }, orchestration: { claudeCode: false, pi: false, antigravity: null } });
+  assert.equal(CHECKS.orchestration(piNo).status, "degraded");
+  const piYes = fullEnv({ runtimes: { claudeCode: false, pi: true, antigravity: false }, orchestration: { claudeCode: false, pi: true, antigravity: null } });
+  assert.equal(CHECKS.orchestration(piYes).status, "ok");
+  const none = fullEnv({ runtimes: { claudeCode: false, pi: false, antigravity: false }, orchestration: { claudeCode: false, pi: false, antigravity: null } });
+  assert.equal(CHECKS.orchestration(none).status, "missing");
+});
+
+// 32 — orchestration & agentsSkills are OPTIONAL in every profile → never a blocker
+t("32 orchestration/agentsSkills optional in all profiles", () => {
+  for (const def of Object.values(PROFILES)) { assert.ok(def.optional.includes("orchestration")); assert.ok(def.optional.includes("agentsSkills")); }
+});
+
+// 33 — .agents/skills broken (Windows no-symlink) → degraded, never blocks (core-lab DEGRADED)
+t("33 agentsSkills broken → DEGRADED not BLOCKED", () => {
+  const e = fullEnv({ agentsSkills: { present: true, total: 14, broken: ["modo", "security-auditor"] } });
+  assert.equal(CHECKS.agentsSkills(e).status, "degraded");
+  const r = runPreflight(e, { profile: "core-lab" });
+  assert.equal(r.verdict, "DEGRADED"); assert.ok(!r.blockers.includes("agentsSkills"));
+});
+
+// 34 — agentsSkills ok; Atlassian/stride DISCRIMINATING (ok when present, missing when absent); never a blocker
+t("34 agentsSkills ok; Atlassian/stride discriminating", () => {
+  assert.equal(CHECKS.agentsSkills(fullEnv()).status, "ok");
+  assert.equal(CHECKS.mcpAtlassian(fullEnv()).status, "ok");   // present in fullEnv
+  assert.equal(CHECKS.stride(fullEnv()).status, "ok");
+  const e = fullEnv({ mcp: { github: false, confluence: false, atlassian: false, stride: false, servers: [] } });
+  assert.equal(CHECKS.mcpAtlassian(e).status, "missing");      // absent → missing (status flips with the input)
+  assert.equal(CHECKS.stride(e).status, "missing");
+  assert.ok(!runPreflight(e, { profile: "caido-native" }).blockers.length); // optional → never blocks
+});
+
+// 35 — a flat/odd mcp-adapter.json must NOT false-positive (scalar-valued keys are not servers)
+t("35 flat mcp-adapter.json does not false-positive", () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "sa-pf-"));
+  try {
+    const agent = path.join(home, ".pi", "agent"); fs.mkdirSync(agent, { recursive: true });
+    fs.writeFileSync(path.join(agent, "mcp-adapter.json"), JSON.stringify({ logLevel: "info", githubToken: "x", jira_url: "y" }));
+    const e = collectEnv({ env: { HOME: home, USERPROFILE: home }, platform: "linux" });
+    assert.deepEqual(e.mcp.servers, []);      // scalar-valued keys are NOT server names
+    assert.equal(e.mcp.github, false);        // no false "configured" from a key containing "github"
+    assert.equal(e.mcp.atlassian, false);
+  } finally { fs.rmSync(home, { recursive: true, force: true }); }
 });
 
 console.log(`\n${n - fail}/${n} passed` + (fail ? ` (${fail} FAILED)` : ""));
